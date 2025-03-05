@@ -37,8 +37,6 @@ A concise, engaging description of your hackathon project.
    pip install -r requirements.txt
    ```
 
-   ```
-
 4. Run the Application
    ```bash
    # Start frontend
