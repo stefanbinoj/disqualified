@@ -1,7 +1,10 @@
 # Project Name
 
 ## 🚀 Project Description
-A concise, engaging description of your hackathon project. 
+A concise, engaging description of your hackathon project.
+
+## 🎯 Link to Project
+[live link of project](live_link)
 
 ## 🛠 Tech Stack
 - List the primary technologies used
@@ -19,14 +22,7 @@ A concise, engaging description of your hackathon project.
 
 ## 🔧 Installation & Setup
 
-### Local Development
-1. Clone the repository
-   ```bash
-   git clone https://github.com/your-username/project-name.git
-   cd project-name
-   ```
-
-2. Install dependencies
+1. Install dependencies
    ```bash
    # Frontend
    cd frontend
@@ -37,7 +33,15 @@ A concise, engaging description of your hackathon project.
    pip install -r requirements.txt
    ```
 
-4. Run the Application
+2. Configure Environment Variables
+   - Create a `.env` file
+   - Add necessary configuration details
+   ```
+   API_KEY=your_api_key
+   DATABASE_URL=your_database_connection_string
+   ```
+
+3. Run the Application
    ```bash
    # Start frontend
    npm start
@@ -47,9 +51,9 @@ A concise, engaging description of your hackathon project.
    ```
 
 ## Team Members
-  - [Name 1] - [Role/Contribution]
-  - [Name 2] - [Role/Contribution]
+  [1.Team Member 1](enter_github_id_here)   
+  [2.Team Member 2](enter_github_id_here)   
+  [3.Team Member 3](enter_github_id_here)   
+  [4.Team Member 4](enter_github_id_here)  
 
-
-
-**Made with ❤️ at [Hackathon Name]**
+**Made with ❤️ at Beachhack 6**
