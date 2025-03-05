@@ -34,14 +34,16 @@ A concise, engaging description of your hackathon project.
    ```
 
 2. Configure Environment Variables
+   
    - Create a `.env` file
    - Add necessary configuration details
+     
    ```
    API_KEY=your_api_key
    DATABASE_URL=your_database_connection_string
    ```
 
-3. Run the Application
+4. Run the Application
    ```bash
    # Start frontend
    npm start
