@@ -1,25 +1,25 @@
 import React from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { useState } from "react";
-import { Home, Inbox, ClipboardList, UserCircle } from "lucide-react";
+import { Plus, Inbox, ClipboardList, UserCircle } from "lucide-react";
 
 const Navbar2 = () => {
   return (
     <nav className="fixed bottom-0 left-0 w-full flex justify-around bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.1)] py-2 z-50">
       <NavLink 
-        to="/employer/" // Changed from "/"
+        to="/employer/" 
         className={({ isActive }) => 
           isActive 
             ? "flex flex-col items-center text-blue-600 w-1/4 py-2 transition-all duration-300" 
             : "flex flex-col items-center text-gray-500 w-1/4 py-2 transition-all duration-300"
         }
       >
-        <Plus className="w-6 h-6 mb-1 stroke-current" /> {/* Changed from Home to Plus */}
-        <span className="text-xs">Add</span> {/* Changed from Home to Add */}
+        <Plus className="w-6 h-6 mb-1 stroke-current" />
+        <span className="text-xs">Hire</span>
       </NavLink>
       
       <NavLink 
-        to="employer/applies" 
+        to="/employer/applies" 
         className={({ isActive }) => 
           isActive 
             ? "flex flex-col items-center text-blue-600 w-1/4 py-2 transition-all duration-300" 
@@ -31,7 +31,7 @@ const Navbar2 = () => {
       </NavLink>
       
       <NavLink 
-        to="/inbox" 
+        to="/employer/inbox" 
         className={({ isActive }) => 
           isActive 
             ? "flex flex-col items-center text-blue-600 w-1/4 py-2 transition-all duration-300" 
@@ -43,7 +43,7 @@ const Navbar2 = () => {
       </NavLink>
       
       <NavLink 
-        to="/profile" 
+        to="/employer/profile" 
         className={({ isActive }) => 
           isActive 
             ? "flex flex-col items-center text-blue-600 w-1/4 py-2 transition-all duration-300" 

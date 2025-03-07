@@ -11,6 +11,7 @@ import Inbox from "./pages/Inbox";
 import Applies from "./pages/Applies";
 import Navbar1 from './components/Navbar1';
 import Navbar2 from './components/Navbar2';
+import AddJob from "./pages/AddJob";
 
 const UserDashboardLayout = () => (
   <>
@@ -20,18 +21,18 @@ const UserDashboardLayout = () => (
       <Route path="/applies" element={<Applies />} />
       <Route path="/profile" element={<Profile />} />
     </Routes>
-    <Navbar2 />
+    <Navbar1 />
   </>
 );
 const EmployerDashboardLayout = () => (
   <>
     <Routes>
-      <Route path="/employer/" element={<Home />} />
-      <Route path="/employer/inbox" element={<Inbox />} />
-      <Route path="/employer/applies" element={<Applies />} />
-      <Route path="/employer/profile" element={<Profile />} />
+      <Route path="/" element={<AddJob />} />
+      <Route path="inbox" element={<Inbox />} />
+      <Route path="applies" element={<Applies />} />
+      <Route path="profile" element={<Profile />} />
     </Routes>
-    <Navbar1 />
+    <Navbar2 />
   </>
 );
 
