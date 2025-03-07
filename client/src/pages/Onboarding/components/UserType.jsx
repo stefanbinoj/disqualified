@@ -28,6 +28,10 @@ const UserType = ({ selectedType, onSelect, onBack, formData }) => {
             "http://localhost:4002/api/users/",
             { ...formData, role: "employer", phone: formData.phoneNumber }
           );
+          if (response.data.token) {
+            localStorage.setItem("token", response.data.token);
+            // navigate("/employer/hire");
+          }
         } catch (error) {
           console.error(
             "Error:",
@@ -35,21 +39,29 @@ const UserType = ({ selectedType, onSelect, onBack, formData }) => {
           );
         }
         navigate("/employer/hire");
+      } else if (selectedType === "job_seeker") {
+        console.log(1);
+        try {
+          const response = await axios.post(
+            "http://localhost:4002/api/users/",
+            {
+              ...formData,
+              role: "employee",
+              phone: formData.phoneNumber,
+            }
+          );
+          if (response.data.token) {
+            localStorage.setItem("token", response.data.token);
+            navigate("/employer/hire");
+          }
+        } catch (error) {
+          console.error(
+            "Error:",
+            error.response ? error.response.data : error.message
+          );
+        }
+        //navigate("/user/home");
       }
-    } else {
-      try {
-        const response = await axios.post("http://localhost:4002/api/users/", {
-          ...formData,
-          role: "employee",
-          phone: formData.phoneNumber,
-        });
-      } catch (error) {
-        console.error(
-          "Error:",
-          error.response ? error.response.data : error.message
-        );
-      }
-      navigate("/user/home");
     }
   };
 

@@ -20,6 +20,27 @@ const userSchema = new mongoose.Schema(
       enum: ["employee", "employer"],
       default: "employee",
     },
+    title: {
+      type: String,
+      trim: true,
+    },
+    status: {
+      type: String,
+      trim: true,
+    },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+    },
+    location: {
+      type: String,
+      trim: true,
+    },
+    about: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true, // This will add createdAt and updatedAt fields automatically

@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const {
-  getAllUsers,
+  getCurrentUser,
   getUserById,
   createUser,
+  updateUserProfile,
 } = require("../controllers/userController");
 const verifyToken = require("../middlewares/auth");
 
@@ -11,7 +12,9 @@ const verifyToken = require("../middlewares/auth");
 router.post("/", createUser);
 
 // Protected routes
-router.get("/", verifyToken, getAllUsers);
+router.get("/", verifyToken, getCurrentUser);
+router.patch("/profile", verifyToken, updateUserProfile);
+
 router.get("/:id", verifyToken, getUserById);
 
 module.exports = router;

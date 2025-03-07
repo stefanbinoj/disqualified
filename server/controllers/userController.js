@@ -2,10 +2,11 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 
 // Get all users
-const getAllUsers = async (req, res) => {
+const getCurrentUser = async (req, res) => {
   try {
-    const users = await User.find();
-    res.json(users);
+    const userId = req.user.userId;
+    const user = await User.findById(userId);
+    res.json({ user }).status(200);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -52,7 +53,7 @@ const createUser = async (req, res) => {
 
     // Set cookie
     res.cookie("token", token, {
-      httpOnly: true,
+      httpOnly: false,
       secure: false,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
@@ -60,14 +61,79 @@ const createUser = async (req, res) => {
     res.status(201).json({
       user: newUser,
       message: "User created successfully",
+      token: token,
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
+// Update user profile
+const updateUserProfile = async (req, res) => {
+  try {
+    // Get userId from authenticated user
+    const userId = req.user.userId;
+
+    // Fields that are allowed to be updated
+    const allowedUpdates = [
+      "firstName",
+      "lastName",
+      "phone",
+      "title",
+      "status",
+      "email",
+      "location",
+      "about",
+    ];
+
+    // Create update object only with allowed fields that are present in req.body
+    const updates = {};
+    Object.keys(req.body).forEach((field) => {
+      if (allowedUpdates.includes(field)) {
+        updates[field] = req.body[field];
+      }
+    });
+
+    // If no valid updates provided
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No valid fields to update",
+      });
+    }
+
+    // Find and update user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updates },
+      { new: true, runValidators: true } // Return updated user and run schema validators
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating profile",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
-  getAllUsers,
+  getCurrentUser,
   getUserById,
   createUser,
+  updateUserProfile,
 };
