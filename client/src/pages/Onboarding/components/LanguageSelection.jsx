@@ -24,23 +24,28 @@ const LanguageSelection = ({ selectedLanguage, onSelect, onNext }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      className="text-center"
     >
-      <h2 className="step-title">{t('chooseLanguage')}</h2>
-      <div className="language-grid">
+      <h2 className="text-2xl font-semibold mb-6">{t('chooseLanguage')}</h2>
+      <div className="grid grid-cols-2 gap-4 mb-6">
         {languages.map((lang) => (
-          <motion.div
+          <motion.button
             key={lang.code}
-            className={`language-option ${selectedLanguage === lang.code ? 'selected' : ''}`}
+            className={`p-4 rounded-lg border-2 ${
+              selectedLanguage === lang.code 
+                ? 'border-black bg-black text-white' 
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
             onClick={() => handleLanguageSelect(lang.code)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             {lang.name}
-          </motion.div>
+          </motion.button>
         ))}
       </div>
       <button
-        className="button button-primary"
+        className="w-full py-3 bg-black text-white rounded-lg disabled:opacity-50"
         onClick={onNext}
         disabled={!selectedLanguage}
       >

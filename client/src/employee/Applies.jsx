@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Header from "./components/Header";
 import { ChevronRight, MapPin, Star, BookmarkIcon, EyeOffIcon, ChevronLeft } from "lucide-react";
+import { useLanguage } from '../contexts/LanguageContext';
 
 // This should come from your global state management (like Redux/Context)
 const applications = [
@@ -141,6 +142,7 @@ const suggestedJobs = [
 ];
 
 const Applies = () => {
+  const { t } = useLanguage();
   const [selectedJob, setSelectedJob] = useState(null);
   const [selectedApplication, setSelectedApplication] = useState(null);
 
@@ -161,7 +163,7 @@ const Applies = () => {
   };
 
   // Application Details Modal
-  const ApplicationModal = ({ application, onClose }) => (
+  const ApplicationModal = ({ application, onClose, t }) => (
     <div className="fixed inset-0 bg-black/25 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-2xl rounded-xl p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-start mb-6">
@@ -197,19 +199,19 @@ const Applies = () => {
 
           <div className="space-y-2">
             <div className="flex justify-between text-gray-600">
-              <span>Experience Required:</span>
+              <span>{t('experienceRequired')}:</span>
               <span>{application.job.experience}</span>
             </div>
             <div className="flex justify-between text-gray-600">
-              <span>Salary:</span>
+              <span>{t('salary')}:</span>
               <span>{application.job.salary}</span>
             </div>
             <div className="flex justify-between text-gray-600">
-              <span>Job Type:</span>
+              <span>{t('jobType')}:</span>
               <span>{application.job.type}</span>
             </div>
             <div className="flex justify-between text-gray-600">
-              <span>Applied On:</span>
+              <span>{t('appliedOn')}:</span>
               <span>{new Date(application.appliedDate).toLocaleDateString()}</span>
             </div>
           </div>
@@ -219,7 +221,7 @@ const Applies = () => {
   );
 
   // Job Details Modal (same as Home.jsx)
-  const JobModal = ({ job, onClose }) => (
+  const JobModal = ({ job, onClose, t }) => (
     <div className="fixed inset-0 bg-black/25 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-2xl rounded-xl p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-start mb-6">
@@ -254,14 +256,14 @@ const Applies = () => {
           </div>
 
           <div>
-            <h3 className="font-semibold text-lg mb-2">Job Description</h3>
+            <h3 className="font-semibold text-lg mb-2">{t('jobDescription')}</h3>
             <p className="text-gray-600">
               We are looking for a {job.title} to join our team. This is a {job.type.toLowerCase()} position with competitive compensation and benefits.
             </p>
           </div>
 
           <div>
-            <h3 className="font-semibold text-lg mb-2">About {job.company}</h3>
+            <h3 className="font-semibold text-lg mb-2">{t('about')} {job.company}</h3>
             <p className="text-gray-600">
               {job.company} is a leading company in its field, focused on providing quality services.
             </p>
@@ -276,7 +278,7 @@ const Applies = () => {
                 console.log('Apply clicked for job:', job.id);
               }}
             >
-              Apply Now
+              {t('applyNow')}
             </button>
           </div>
         </div>
@@ -290,11 +292,11 @@ const Applies = () => {
       <div className="pt-14 px-4">
         <div className="max-w-3xl mx-auto">
           {/* Applications Section */}
-          <h1 className="text-2xl font-semibold mt-6 mb-4">Your applications</h1>
+          <h1 className="text-2xl font-semibold mt-6 mb-4">{t('yourApplications')}</h1>
           
           {applications.length === 0 ? (
             <div className="bg-white rounded-lg p-8 text-center">
-              <p className="text-gray-600">You haven't applied to any jobs yet.</p>
+              <p className="text-gray-600">{t('noApplications')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -325,7 +327,7 @@ const Applies = () => {
                           <MapPin className="w-4 h-4" />
                           {application.job.location}
                         </span>
-                        <span>Applied on {new Date(application.appliedDate).toLocaleDateString()}</span>
+                        <span>{t('appliedOn')} {new Date(application.appliedDate).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
@@ -337,7 +339,7 @@ const Applies = () => {
           {/* Suggestions Section */}
           <div className="mt-8">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Suggestions</h2>
+              <h2 className="text-xl font-semibold">{t('suggestions')}</h2>
               <div className="flex gap-2">
                 <button className="p-2 rounded-full hover:bg-gray-100">
                   <ChevronLeft className="w-5 h-5" />
@@ -388,12 +390,14 @@ const Applies = () => {
         <ApplicationModal 
           application={selectedApplication} 
           onClose={() => setSelectedApplication(null)} 
+          t={t}
         />
       )}
       {selectedJob && (
         <JobModal 
           job={selectedJob} 
           onClose={() => setSelectedJob(null)} 
+          t={t}
         />
       )}
     </div>

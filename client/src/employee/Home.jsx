@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Header from "./components/Header";
 import { Search, SlidersHorizontal, ChevronDown, MapPin, Star, BookmarkIcon, EyeOffIcon } from "lucide-react";
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Sample job data
 const jobs = [
@@ -68,6 +69,7 @@ const jobs = [
 ];
 
 const Home = () => {
+  const { t } = useLanguage();
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState("Kochi");
@@ -135,7 +137,7 @@ const Home = () => {
           <div className="flex-1 relative">
             <input
               type="text"
-              placeholder="Search jobs, skills, companies"
+              placeholder={t('searchPlaceholder')}
               className="w-full pl-4 pr-12 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-black"
             />
             <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -241,30 +243,60 @@ const Home = () => {
 
       {/* Location Modal */}
       {showLocationModal && (
-        <div className="fixed inset-0 bg-black/25 backdrop-blur-[2px] z-50 flex items-end">
-          <div className="bg-white w-full rounded-t-2xl p-4 animate-slide-up">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Select Location</h2>
-              <button onClick={() => setShowLocationModal(false)}>✕</button>
-            </div>
-            <input
-              type="text"
-              placeholder="Search location..."
-              className="w-full p-3 border border-gray-300 rounded-lg mb-4"
-            />
-            <div className="space-y-3">
-              {["Kochi", "Bangalore", "Mumbai", "Delhi NCR"].map((location) => (
-                <button 
-                  key={location}
-                  className="w-full text-left p-3 hover:bg-gray-50 rounded-lg"
-                  onClick={() => {
-                    setSelectedLocation(location);
-                    setShowLocationModal(false);
-                  }}
-                >
-                  {location}
-                </button>
-              ))}
+        <div className="fixed inset-x-0 top-[72px] z-50">
+          <div className="bg-black/25 backdrop-blur-[2px] h-screen" onClick={() => setShowLocationModal(false)}>
+            <div 
+              className="bg-white w-full rounded-b-2xl p-4 animate-slide-up max-h-[50vh] overflow-hidden" 
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">{t('selectLocation')}</h2>
+                <button onClick={() => setShowLocationModal(false)}>✕</button>
+              </div>
+              <input
+                type="text"
+                placeholder={t('searchLocation')}
+                className="w-full p-3 border border-gray-300 rounded-lg mb-4 sticky top-0"
+              />
+              <div className="space-y-3 overflow-y-auto max-h-[calc(50vh-120px)]">
+                {[
+                  "Kochi",
+                  "Bangalore",
+                  "Mumbai",
+                  "Delhi NCR",
+                  "Hyderabad",
+                  "Chennai",
+                  "Pune",
+                  "Ahmedabad",
+                  "Kolkata",
+                  "Jaipur",
+                  "Chandigarh",
+                  "Lucknow",
+                  "Indore",
+                  "Coimbatore",
+                  "Nagpur",
+                  "Thiruvananthapuram",
+                  "Bhubaneswar",
+                  "Visakhapatnam",
+                  "Surat",
+                  "Vadodara",
+                  "Mangalore",
+                  "Nashik",
+                  "Guwahati",
+                  "Mysore"
+                ].map((location) => (
+                  <button 
+                    key={location}
+                    className="w-full text-left p-3 hover:bg-gray-50 rounded-lg"
+                    onClick={() => {
+                      setSelectedLocation(location);
+                      setShowLocationModal(false);
+                    }}
+                  >
+                    {location}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -275,37 +307,103 @@ const Home = () => {
         <div className="fixed inset-0 bg-black/25 backdrop-blur-[2px] z-50 flex items-end">
           <div className="bg-white w-full rounded-t-2xl p-4 animate-slide-up">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Filters</h2>
+              <h2 className="text-lg font-semibold">{t('filters')}</h2>
               <button onClick={() => setShowFilterModal(false)}>✕</button>
             </div>
             <div className="space-y-4">
+              {/* Monthly Salary Ranges */}
               <div>
-                <h3 className="font-medium mb-2">Experience</h3>
+                <h3 className="font-medium mb-2">Monthly Salary</h3>
                 <div className="space-y-2">
                   <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    0-2 years
+                    <input 
+                      type="radio" 
+                      name="compensation" 
+                      className="mr-2"
+                      value="salary_15_30" 
+                    />
+                    ₹15,000 - ₹30,000
                   </label>
                   <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    2-5 years
+                    <input 
+                      type="radio" 
+                      name="compensation" 
+                      className="mr-2"
+                      value="salary_30_50" 
+                    />
+                    ₹30,000 - ₹50,000
                   </label>
-                  {/* Add more experience ranges */}
+                  <label className="flex items-center">
+                    <input 
+                      type="radio" 
+                      name="compensation" 
+                      className="mr-2"
+                      value="salary_50_80" 
+                    />
+                    ₹50,000 - ₹80,000
+                  </label>
+                  <label className="flex items-center">
+                    <input 
+                      type="radio" 
+                      name="compensation" 
+                      className="mr-2"
+                      value="salary_80_plus" 
+                    />
+                    ₹80,000+
+                  </label>
                 </div>
               </div>
-              
+
+              {/* Daily Wage Ranges */}
               <div>
-                <h3 className="font-medium mb-2">Salary</h3>
+                <h3 className="font-medium mb-2">Daily Wage</h3>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input 
+                      type="radio" 
+                      name="compensation" 
+                      className="mr-2"
+                      value="wage_500_800" 
+                    />
+                    ₹500 - ₹800 per day
+                  </label>
+                  <label className="flex items-center">
+                    <input 
+                      type="radio" 
+                      name="compensation" 
+                      className="mr-2"
+                      value="wage_800_1200" 
+                    />
+                    ₹800 - ₹1,200 per day
+                  </label>
+                  <label className="flex items-center">
+                    <input 
+                      type="radio" 
+                      name="compensation" 
+                      className="mr-2"
+                      value="wage_1200_plus" 
+                    />
+                    ₹1,200+ per day
+                  </label>
+                </div>
+              </div>
+
+              {/* Working Hours */}
+              <div>
+                <h3 className="font-medium mb-2">Working Hours</h3>
                 <div className="space-y-2">
                   <label className="flex items-center">
                     <input type="checkbox" className="mr-2" />
-                    3-6 LPA
+                    Full Time (40 hrs/week)
                   </label>
                   <label className="flex items-center">
                     <input type="checkbox" className="mr-2" />
-                    6-10 LPA
+                    Part Time (20-30 hrs/week)
                   </label>
-                  {/* Add more salary ranges */}
+                  <label className="flex items-center">
+                    <input type="checkbox" className="mr-2" />
+                    Flexible Hours
+                  </label>
                 </div>
               </div>
 
@@ -314,13 +412,13 @@ const Home = () => {
                   className="flex-1 py-3 border border-gray-300 rounded-lg"
                   onClick={() => setShowFilterModal(false)}
                 >
-                  Clear
+                  {t('clear')}
                 </button>
                 <button 
                   className="flex-1 py-3 bg-black text-white rounded-lg"
                   onClick={() => setShowFilterModal(false)}
                 >
-                  Apply
+                  {t('apply')}
                 </button>
               </div>
             </div>

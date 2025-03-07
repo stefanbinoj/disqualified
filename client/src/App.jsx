@@ -14,6 +14,7 @@ import Inbox2 from "./employee/Inbox";
 import Applies2 from "./employee/Applies";
 import Profile2 from "./employee/Profile";
 import Hire from "./employer/Hire";
+import Settings from './employee/Settings';
 
 const EmployeeDashboardLayout = () => (
   <>
@@ -22,6 +23,7 @@ const EmployeeDashboardLayout = () => (
       <Route path="/inbox" element={<Inbox2 />} />
       <Route path="/applies" element={<Applies2 />} />
       <Route path="/profile" element={<Profile2 />} />
+      <Route path="/settings" element={<Settings />} />
     </Routes>
     <Navbar1 />
   </>
@@ -48,6 +50,7 @@ function App() {
             <Route path="/" element={<Onboarding />} />
             <Route path="/employer/*" element={<EmployerDashboardLayout />} />
             <Route path="/user/*" element={<EmployeeDashboardLayout />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </div>
       </Router>
