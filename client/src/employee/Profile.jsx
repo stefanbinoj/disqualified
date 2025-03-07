@@ -278,14 +278,6 @@ const Profile = () => {
                   <p className="text-gray-500 text-sm mt-1">
                     {profileData.status}
                   </p>
-                  <button
-                    onClick={() =>
-                      setEditMode((prev) => ({ ...prev, basic: true }))
-                    }
-                    className="mt-4 px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800"
-                  >
-                    Edit Profile
-                  </button>
                 </>
               )}
             </div>
