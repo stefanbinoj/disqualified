@@ -30,7 +30,6 @@ const UserType = ({ selectedType, onSelect, onBack, formData }) => {
           );
           if (response.data.token) {
             localStorage.setItem("token", response.data.token);
-            // navigate("/employer/hire");
           }
         } catch (error) {
           console.error(
@@ -40,7 +39,6 @@ const UserType = ({ selectedType, onSelect, onBack, formData }) => {
         }
         navigate("/employer/hire");
       } else if (selectedType === "job_seeker") {
-        console.log(1);
         try {
           const response = await axios.post(
             "http://localhost:4002/api/users/",
@@ -60,7 +58,7 @@ const UserType = ({ selectedType, onSelect, onBack, formData }) => {
             error.response ? error.response.data : error.message
           );
         }
-        //navigate("/user/home");
+        navigate("/user/home");
       }
     }
   };
