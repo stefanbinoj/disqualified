@@ -7,14 +7,13 @@ import api from "../axiosWithHeaders";
 const Profile = () => {
   // State for profile data
   const [profileData, setProfileData] = useState({
-    name: "John Doe",
-    title: "Full Stack Developer",
-    status: "Available for opportunities",
-    email: "john.doe@example.com",
-    phone: "+91 98765 43210",
+    name: "",
+    title: "",
+    status: "",
+    email: "",
+    phone: "",
     location: "Kochi, Kerala",
-    about:
-      "Experienced Full Stack Developer with 5+ years of hands-on experience in developing scalable web applications. Passionate about creating efficient, maintainable code and solving complex problems.",
+    about: "",
     image: bg,
   });
 
