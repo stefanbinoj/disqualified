@@ -24,6 +24,10 @@ app
 
 const PORT = process.env.PORT || 4000;
 
+// Routes
+app.use("/api/users", require("./routers/userRoutes"));
+app.use("/api/jobs", require("./routers/jobListingRoutes"));
+
 app.listen(PORT, () => {
   console.log(`Port is running at ${PORT}`);
 });
