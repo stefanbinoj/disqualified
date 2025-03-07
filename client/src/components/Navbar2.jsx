@@ -7,7 +7,7 @@ const Navbar2 = () => {
   return (
     <nav className="fixed bottom-0 left-0 w-full flex justify-around bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.1)] py-2 z-50">
       <NavLink 
-        to="/employer/" 
+        to="/employer/hire" 
         className={({ isActive }) => 
           isActive 
             ? "flex flex-col items-center text-blue-600 w-1/4 py-2 transition-all duration-300" 

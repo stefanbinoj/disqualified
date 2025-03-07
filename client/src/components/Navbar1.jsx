@@ -7,7 +7,7 @@ const Navbar1 = () => {
   return (
     <nav className="fixed bottom-0 left-0 w-full flex justify-around bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.1)] py-2 z-50">
       <NavLink 
-        to="/" 
+        to="/user/home" 
         className={({ isActive }) => 
           isActive 
             ? "flex flex-col items-center text-blue-600 w-1/4 py-2 transition-all duration-300" 
@@ -19,7 +19,7 @@ const Navbar1 = () => {
       </NavLink>
       
       <NavLink 
-        to="/applies" 
+        to="/user/applies" 
         className={({ isActive }) => 
           isActive 
             ? "flex flex-col items-center text-blue-600 w-1/4 py-2 transition-all duration-300" 
@@ -31,7 +31,7 @@ const Navbar1 = () => {
       </NavLink>
       
       <NavLink 
-        to="/inbox" 
+        to="/user/inbox" 
         className={({ isActive }) => 
           isActive 
             ? "flex flex-col items-center text-blue-600 w-1/4 py-2 transition-all duration-300" 
@@ -43,7 +43,7 @@ const Navbar1 = () => {
       </NavLink>
       
       <NavLink 
-        to="/profile" 
+        to="/user/profile" 
         className={({ isActive }) => 
           isActive 
             ? "flex flex-col items-center text-blue-600 w-1/4 py-2 transition-all duration-300" 

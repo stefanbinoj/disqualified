@@ -25,7 +25,7 @@ const UserType = ({ selectedType, onSelect, onBack }) => {
       if (selectedType === 'employer') {
         navigate('/employer/');
       } else {
-        navigate('/');
+        navigate('/user/');
       }
     }
   };

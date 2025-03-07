@@ -16,7 +16,7 @@ import AddJob from "./pages/AddJob";
 const UserDashboardLayout = () => (
   <>
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/home" element={<Home />} />
       <Route path="/inbox" element={<Inbox />} />
       <Route path="/applies" element={<Applies />} />
       <Route path="/profile" element={<Profile />} />
@@ -27,7 +27,7 @@ const UserDashboardLayout = () => (
 const EmployerDashboardLayout = () => (
   <>
     <Routes>
-      <Route path="/" element={<AddJob />} />
+      <Route path="/hire" element={<AddJob />} />
       <Route path="inbox" element={<Inbox />} />
       <Route path="applies" element={<Applies />} />
       <Route path="profile" element={<Profile />} />
@@ -43,9 +43,9 @@ function App() {
         <PWAPrompt />
         <div className="min-h-screen bg-gray-100">
           <Routes>
-            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/" element={<Onboarding />} />
             <Route path="/employer/*" element={<EmployerDashboardLayout />} />
-            <Route path="/*" element={<UserDashboardLayout />} />
+            <Route path="/user/*" element={<UserDashboardLayout />} />
           </Routes>
         </div>
       </Router>
