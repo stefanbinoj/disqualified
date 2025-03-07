@@ -1,33 +1,33 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import LanguageSelection from './components/LanguageSelection';
-import UserDetails from './components/UserDetails';
-import OtpVerification from './components/OtpVerification';
-import UserType from './components/UserType';
-import './Onboarding.css';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import LanguageSelection from "./components/LanguageSelection";
+import UserDetails from "./components/UserDetails";
+import OtpVerification from "./components/OtpVerification";
+import UserType from "./components/UserType";
+import "./Onboarding.css";
 
 const Onboarding = () => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    language: '',
-    firstName: '',
-    lastName: '',
-    phoneNumber: '',
-    age: '',
-    otp: '',
-    userType: ''
+    language: "",
+    firstName: "",
+    lastName: "",
+    phoneNumber: "",
+    age: "",
+    otp: "",
+    userType: "",
   });
 
   const handleNext = () => {
-    setStep(prev => prev + 1);
+    setStep((prev) => prev + 1);
   };
 
   const handleBack = () => {
-    setStep(prev => prev - 1);
+    setStep((prev) => prev - 1);
   };
 
   const updateFormData = (data) => {
-    setFormData(prev => ({ ...prev, ...data }));
+    setFormData((prev) => ({ ...prev, ...data }));
   };
 
   const renderStep = () => {
@@ -61,6 +61,7 @@ const Onboarding = () => {
         return (
           <UserType
             selectedType={formData.userType}
+            formData={formData}
             onSelect={(type) => updateFormData({ userType: type })}
             onBack={handleBack}
           />
@@ -79,7 +80,7 @@ const Onboarding = () => {
         className="onboarding-card"
       >
         <div className="progress-bar">
-          <div 
+          <div
             className="progress-fill"
             style={{ width: `${(step / 4) * 100}%` }}
           />
@@ -90,4 +91,4 @@ const Onboarding = () => {
   );
 };
 
-export default Onboarding; 
+export default Onboarding;
