@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import bgImage from '../../../assets/bg.jpg';
 
-const OtpVerification = ({ onVerify, onBack, updateFormData }) => {
+const OtpVerification = ({ onVerify, onBack, updateFormData, currentStep, totalSteps }) => {
   const [otp, setOtp] = useState(['', '', '', '']);
   const [error, setError] = useState('');
   const DEFAULT_OTP = '1234';
@@ -44,78 +45,84 @@ const OtpVerification = ({ onVerify, onBack, updateFormData }) => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <button className="back-button" onClick={onBack}>
-        ← {t('back')}
-      </button>
-      <h2 className="step-title">{t('enterOtp')}</h2>
-      <p style={{ marginBottom: '1.5rem', color: 'var(--gray-500)' }}>
-        {t('otpMessage')}
-      </p>
-      
-      <form onSubmit={handleSubmit}>
-        <div style={{ 
-          display: 'flex', 
-          gap: '0.5rem', 
-          justifyContent: 'center',
-          marginBottom: '1.5rem'
-        }}>
-          {otp.map((digit, index) => (
-            <input
-              key={index}
-              type="text"
-              name={`otp-${index}`}
-              maxLength={1}
-              value={digit}
-              onChange={(e) => handleChange(index, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(index, e)}
-              className="input-field"
-              style={{
-                width: '3rem',
-                height: '3rem',
-                textAlign: 'center',
-                fontSize: '1.5rem',
-                padding: '0.5rem'
-              }}
-            />
-          ))}
+    <div className="fixed inset-0 overflow-hidden">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: `url(${bgImage})`,
+          filter: 'brightness(0.9)'
+        }}
+      />
+
+      {/* Content Container */}
+      <div className="relative h-full flex flex-col">
+        <div className="flex-1 flex flex-col justify-end">
+          {/* White Card */}
+          <div className="bg-white rounded-t-[32px] p-8 shadow-lg w-full max-w-none">
+            <div className="max-w-2xl mx-auto">
+              <button 
+                className="text-black mb-6 flex items-center"
+                onClick={onBack}
+              >
+                ← {t('back')}
+              </button>
+              
+              <h2 className="text-2xl font-semibold mb-4">{t('enterOtp')}</h2>
+              <p className="text-gray-500 mb-8">{t('otpMessage')}</p>
+
+              <form onSubmit={handleSubmit}>
+                <div className="flex gap-4 justify-center mb-6">
+                  {otp.map((digit, index) => (
+                    <input
+                      key={index}
+                      type="text"
+                      name={`otp-${index}`}
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleChange(index, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(index, e)}
+                      className="w-12 h-12 text-center text-2xl border-2 rounded-xl focus:border-black outline-none"
+                    />
+                  ))}
+                </div>
+
+                {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+
+                <button
+                  type="submit"
+                  className="w-full py-4 bg-black text-white rounded-xl disabled:opacity-50 font-medium text-lg mb-4"
+                  disabled={otp.some(digit => digit === '')}
+                >
+                  {t('verify')}
+                </button>
+
+                <p className="text-center text-gray-500 text-sm">
+                  {t('didntReceive')}{' '}
+                  <button 
+                    type="button"
+                    className="text-black underline"
+                    onClick={() => setError(t('defaultOtpMessage'))}
+                  >
+                    {t('resend')}
+                  </button>
+                </p>
+              </form>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="fixed bottom-0 left-0 right-0 bg-white z-50">
+            <div className="bg-gray-100 h-1.5">
+              <div 
+                className="bg-black h-1.5 transition-all duration-300"
+                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+              />
+            </div>
+          </div>
         </div>
-
-        {error && <p className="error-message">{error}</p>}
-
-        <button
-          type="submit"
-          className="button button-primary"
-          disabled={otp.some(digit => digit === '')}
-        >
-          {t('verify')}
-        </button>
-      </form>
-
-      <p style={{ 
-        marginTop: '1rem', 
-        fontSize: '0.875rem', 
-        color: 'var(--gray-500)',
-        textAlign: 'center'
-      }}>
-        {t('didntReceive')} <button 
-          style={{ 
-            background: 'none', 
-            border: 'none', 
-            color: 'var(--primary-black)',
-            textDecoration: 'underline',
-            cursor: 'pointer'
-          }}
-          onClick={() => setError(t('defaultOtpMessage'))}
-        >
-          {t('resend')}
-        </button>
-      </p>
-    </motion.div>
+      </div>
+    </div>
   );
 };
 

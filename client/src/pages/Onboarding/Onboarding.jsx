@@ -8,6 +8,7 @@ import "./Onboarding.css";
 
 const Onboarding = () => {
   const [step, setStep] = useState(1);
+  const totalSteps = 4; // Total number of steps in onboarding
   const [formData, setFormData] = useState({
     language: "",
     firstName: "",
@@ -38,6 +39,8 @@ const Onboarding = () => {
             selectedLanguage={formData.language}
             onSelect={(lang) => updateFormData({ language: lang })}
             onNext={handleNext}
+            currentStep={step}
+            totalSteps={totalSteps}
           />
         );
       case 2:
@@ -47,6 +50,8 @@ const Onboarding = () => {
             onUpdate={updateFormData}
             onNext={handleNext}
             onBack={handleBack}
+            currentStep={step}
+            totalSteps={totalSteps}
           />
         );
       case 3:
@@ -55,6 +60,8 @@ const Onboarding = () => {
             onVerify={() => handleNext()}
             onBack={handleBack}
             updateFormData={updateFormData}
+            currentStep={step}
+            totalSteps={totalSteps}
           />
         );
       case 4:
@@ -64,6 +71,8 @@ const Onboarding = () => {
             formData={formData}
             onSelect={(type) => updateFormData({ userType: type })}
             onBack={handleBack}
+            currentStep={step}
+            totalSteps={totalSteps}
           />
         );
       default:

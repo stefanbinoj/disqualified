@@ -15,6 +15,7 @@ import Applies2 from "./employee/Applies";
 import Profile2 from "./employee/Profile";
 import Hire from "./employer/Hire";
 import Settings from './employee/Settings';
+import EmployerOnboarding from "./pages/EmployerOnboarding/EmployerOnboarding";
 
 const EmployeeDashboardLayout = () => (
   <>
@@ -48,6 +49,7 @@ function App() {
         <div className="min-h-screen bg-gray-100">
           <Routes>
             <Route path="/" element={<Onboarding />} />
+            <Route path="/employer-onboarding" element={<EmployerOnboarding />} />
             <Route path="/employer/*" element={<EmployerDashboardLayout />} />
             <Route path="/user/*" element={<EmployeeDashboardLayout />} />
             <Route path="/settings" element={<Settings />} />
