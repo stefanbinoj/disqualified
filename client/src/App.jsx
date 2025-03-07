@@ -1,25 +1,27 @@
-import React from 'react';
+import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
 import "./App.css";
-import DefaultPage from "./pages/DefaultPage";
-import Profile from "./pages/Profile";
 import PWAPrompt from "./components/PWAPrompt";
-import Onboarding from './pages/Onboarding/Onboarding';
-import { LanguageProvider } from './contexts/LanguageContext';
-import Inbox from "./pages/Inbox";
-import Applies from "./pages/Applies";
-import Navbar1 from './components/Navbar1';
-import Navbar2 from './components/Navbar2';
-import AddJob from "./pages/AddJob";
+import Onboarding from "./pages/Onboarding/Onboarding";
+import { LanguageProvider } from "./contexts/LanguageContext";
+import Navbar1 from "./components/Navbar1";
+import Navbar2 from "./components/Navbar2";
+import Inbox1 from "./employer/Inbox";
+import Applies1 from "./employer/Applies";
+import Profile1 from "./employer/Profile";
+import Home from "./employee/Home";
+import Inbox2 from "./employee/Inbox";
+import Applies2 from "./employee/Applies";
+import Profile2 from "./employee/Profile";
+import Hire from "./employer/Hire";
 
-const UserDashboardLayout = () => (
+const EmployeeDashboardLayout = () => (
   <>
     <Routes>
       <Route path="/home" element={<Home />} />
-      <Route path="/inbox" element={<Inbox />} />
-      <Route path="/applies" element={<Applies />} />
-      <Route path="/profile" element={<Profile />} />
+      <Route path="/inbox" element={<Inbox2 />} />
+      <Route path="/applies" element={<Applies2 />} />
+      <Route path="/profile" element={<Profile2 />} />
     </Routes>
     <Navbar1 />
   </>
@@ -27,10 +29,10 @@ const UserDashboardLayout = () => (
 const EmployerDashboardLayout = () => (
   <>
     <Routes>
-      <Route path="/hire" element={<AddJob />} />
-      <Route path="inbox" element={<Inbox />} />
-      <Route path="applies" element={<Applies />} />
-      <Route path="profile" element={<Profile />} />
+      <Route path="/hire" element={<Hire />} />
+      <Route path="/inbox" element={<Inbox1 />} />
+      <Route path="/applies" element={<Applies1 />} />
+      <Route path="/profile" element={<Profile1 />} />
     </Routes>
     <Navbar2 />
   </>
@@ -45,7 +47,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Onboarding />} />
             <Route path="/employer/*" element={<EmployerDashboardLayout />} />
-            <Route path="/user/*" element={<UserDashboardLayout />} />
+            <Route path="/user/*" element={<EmployeeDashboardLayout />} />
           </Routes>
         </div>
       </Router>
