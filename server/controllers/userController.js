@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
+const JobListing = require("../models/JobListing");
 
 // Get all users
 const getCurrentUser = async (req, res) => {
@@ -131,9 +132,101 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
+// Get user's inbox messages
+const getUserInbox = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Filter options
+    const filter = {};
+    if (req.query.read !== undefined) {
+      filter.read = req.query.read === "true";
+    }
+    if (req.query.type) {
+      filter.type = req.query.type;
+    }
+
+    // Apply filters if present, otherwise return all messages
+    let inbox = user.inbox;
+    if (Object.keys(filter).length > 0) {
+      inbox = user.inbox.filter((message) => {
+        let match = true;
+        if (filter.read !== undefined)
+          match = match && message.read === filter.read;
+        if (filter.type) match = match && message.type === filter.type;
+        return match;
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      count: inbox.length,
+      inbox: inbox,
+    });
+  } catch (error) {
+    console.error("Inbox fetch error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching inbox",
+      error: error.message,
+    });
+  }
+};
+
+// Get user's applied jobs
+const getAppliedJobs = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    // Find user and populate job details from JobList model
+    const user = await User.findById(userId).populate({
+      path: "applied.job",
+      model: "JobListing",
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Filter by status if provided
+    let appliedJobs = user.applied;
+    if (req.query.status) {
+      appliedJobs = user.applied.filter(
+        (application) => application.status === req.query.status
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      count: appliedJobs.length,
+      applied: appliedJobs,
+    });
+  } catch (error) {
+    console.error("Applied jobs fetch error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching applied jobs",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getCurrentUser,
   getUserById,
   createUser,
   updateUserProfile,
+  getUserInbox,
+  getAppliedJobs,
 };

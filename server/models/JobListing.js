@@ -10,6 +10,14 @@ const jobListingSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    description: {
+      type: String,
+      trim: true,
+    },
+    company: {
+      type: String,
+      trim: true,
+    },
     starRating: {
       type: Number,
     },
@@ -29,9 +37,19 @@ const jobListingSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-    rate: {
+    salary: {
       type: Number,
       min: 0,
+    },
+    experience: {
+      type: Number,
+      min: 0,
+    },
+    skills: {
+      type: [String],
+    },
+    type: {
+      type: String,
     },
     applicants: [
       {

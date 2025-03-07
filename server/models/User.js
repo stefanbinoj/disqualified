@@ -41,6 +41,45 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    inbox: [
+      {
+        subject: { type: String, required: true },
+        sender: { type: String, required: true },
+        preview: { type: String },
+        timestamp: { type: Date, default: Date.now },
+        read: { type: Boolean, default: false },
+        type: {
+          type: String,
+          enum: ["interview", "offer", "rejection", "general"],
+        },
+        fullMessage: { type: String, required: true },
+      },
+    ],
+    // New applied array for job applications
+    applied: [
+      {
+        job: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "JobListing",
+        },
+        status: {
+          type: String,
+          enum: [
+            "pending",
+            "viewed",
+            "interviewed",
+            "rejected",
+            "offered",
+            "accepted",
+          ],
+          default: "pending",
+        },
+        appliedDate: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true, // This will add createdAt and updatedAt fields automatically

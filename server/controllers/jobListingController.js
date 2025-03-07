@@ -25,27 +25,53 @@ const getJobListingById = async (req, res) => {
 
 // Create job listing
 const createJobListing = async (req, res) => {
-  const { title, starRating, position, location, duration, rate } = req.body;
-
-  if (!title || !starRating || !position || !location || !duration || !rate) {
-    return res.status(400).json({ error: "All fields are required." });
-  }
-
-  const jobListing = new JobListing({
-    userId: req.user.userId,
-    title: req.body.title,
-    starRating: req.body.starRating,
-    position: req.body.position,
-    location: req.body.location,
-    duration: req.body.duration,
-    rate: req.body.rate,
-  });
-
   try {
+    const { title, starRating = 3.5, location, duration, rate } = req.body;
+
+    // Validate required fields
+    const requiredFields = ["title", "location", "duration", "rate"];
+    const missingFields = requiredFields.filter((field) => !req.body[field]);
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+        missingFields,
+      });
+    }
+
+    // Create new job listing with applicants array
+    const jobListing = new JobListing({
+      userId: req.user.userId, // From auth middleware
+      title,
+      starRating,
+      location,
+      duration,
+      rate,
+      description: req.body.description,
+      applicants: [], // Initialize empty applicants array
+      postedDate: new Date(), // Set current date
+    });
+
     const newJobListing = await jobListing.save();
-    res.status(201).json(newJobListing);
+
+    // Populate user details in response
+    const populatedJob = await JobListing.findById(newJobListing._id)
+      .populate("userId", "firstName lastName")
+      .populate("applicants", "firstName lastName phone role");
+
+    res.status(201).json({
+      success: true,
+      message: "Job listing created successfully",
+      jobListing: populatedJob,
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Create job listing error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create job listing",
+      error: error.message,
+    });
   }
 };
 
