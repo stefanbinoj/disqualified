@@ -20,7 +20,6 @@ app
   .use(express.json())
   .use(cookieParser())
   .use(express.urlencoded({ extended: true }))
-  .use(passport.initialize())
   .use(morgan(":method :url :status :res[content-length] - :response-time ms"));
 
 const PORT = process.env.PORT || 4000;
