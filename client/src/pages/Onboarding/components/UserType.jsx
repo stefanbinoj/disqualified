@@ -23,9 +23,9 @@ const UserType = ({ selectedType, onSelect, onBack }) => {
   const handleGetStarted = () => {
     if (selectedType) {
       if (selectedType === 'employer') {
-        navigate('/');
+        navigate('/employer/');
       } else {
-        navigate('/dashboard');
+        navigate('/');
       }
     }
   };
