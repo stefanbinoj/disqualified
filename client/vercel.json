@@ -1,8 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "client//(.*)",
-      "destination": "client/index.html"
+      "source": "/(.*)",
+      "destination": "index.html"
     }
   ],
   "routes": [
