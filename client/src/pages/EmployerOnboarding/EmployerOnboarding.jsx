@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '../../contexts/LanguageContext';
-import bgImage from '../../assets/bg.jpg';
-import { useLocation } from 'react-router-dom';
-import axios from 'axios';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useLanguage } from "../../contexts/LanguageContext";
+import bgImage from "../../assets/bg.jpg";
+import { useLocation } from "react-router-dom";
+import axios from "axios";
 
 const EmployerOnboarding = () => {
   const location = useLocation();
@@ -15,27 +15,27 @@ const EmployerOnboarding = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 2;
   const [formData, setFormData] = useState({
-    companyName: '',
-    description: '',
-    location: '',
-    industry: '' 
+    companyName: "",
+    description: "",
+    location: "",
+    industry: "",
   });
   const [errors, setErrors] = useState({});
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.companyName.trim()) {
-      newErrors.companyName = 'Company name is required';
+      newErrors.companyName = "Company name is required";
     }
     if (!formData.industry.trim()) {
-      newErrors.industry = 'Industry is required';
+      newErrors.industry = "Industry is required";
     }
     if (!formData.location.trim()) {
-      newErrors.location = 'Location is required';
+      newErrors.location = "Location is required";
     }
     if (!formData.description.trim()) {
-      newErrors.description = 'Company description is required';
+      newErrors.description = "Company description is required";
     }
 
     setErrors(newErrors);
@@ -49,8 +49,16 @@ const EmployerOnboarding = () => {
       if (validateForm()) {
         try {
           const response = await axios.post(
-            "http://localhost:4002/api/users/",
-            { ...formDataUser, role: "employer", phone: formDataUser.phoneNumber, ...formData ,companyDiscription:formData.description,companyLocation:formData.location,industry:formData.industry}
+            "https://disqualified.onrender.com/api/users/",
+            {
+              ...formDataUser,
+              role: "employer",
+              phone: formDataUser.phoneNumber,
+              ...formData,
+              companyDiscription: formData.description,
+              companyLocation: formData.location,
+              industry: formData.industry,
+            }
           );
           if (response.data.token) {
             localStorage.setItem("token", response.data.token);
@@ -61,20 +69,20 @@ const EmployerOnboarding = () => {
             error.response ? error.response.data : error.message
           );
         }
-        navigate('/employer/hire');
+        navigate("/employer/hire");
       }
     }
   };
 
   const handleBack = () => {
-    setCurrentStep(prev => prev - 1);
+    setCurrentStep((prev) => prev - 1);
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -86,10 +94,11 @@ const EmployerOnboarding = () => {
             <h2 className="text-2xl font-semibold mb-4">
               Welcome to Your Hiring Journey
             </h2>
-            
+
             <p className="text-gray-600 mb-8">
-              We're excited to help you find the perfect candidates for your company. 
-              Let's start by setting up your employer profile to attract the best talent.
+              We're excited to help you find the perfect candidates for your
+              company. Let's start by setting up your employer profile to
+              attract the best talent.
             </p>
 
             <motion.button
@@ -106,7 +115,7 @@ const EmployerOnboarding = () => {
       case 2:
         return (
           <>
-            <motion.button 
+            <motion.button
               className="text-black mb-6 flex items-center"
               onClick={handleBack}
               whileHover={{ x: -4 }}
@@ -130,13 +139,15 @@ const EmployerOnboarding = () => {
                   value={formData.companyName}
                   onChange={handleInputChange}
                   className={`w-full p-4 border-2 rounded-xl focus:border-black outline-none ${
-                    errors.companyName ? 'border-red-500' : ''
+                    errors.companyName ? "border-red-500" : ""
                   }`}
                   placeholder="Enter your company name"
                   required
                 />
                 {errors.companyName && (
-                  <p className="text-red-500 text-sm mt-1">{errors.companyName}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.companyName}
+                  </p>
                 )}
               </div>
 
@@ -150,7 +161,7 @@ const EmployerOnboarding = () => {
                   value={formData.industry}
                   onChange={handleInputChange}
                   className={`w-full p-4 border-2 rounded-xl focus:border-black outline-none ${
-                    errors.industry ? 'border-red-500' : ''
+                    errors.industry ? "border-red-500" : ""
                   }`}
                   placeholder="e.g., Technology, Healthcare, etc."
                   required
@@ -170,7 +181,7 @@ const EmployerOnboarding = () => {
                   value={formData.location}
                   onChange={handleInputChange}
                   className={`w-full p-4 border-2 rounded-xl focus:border-black outline-none ${
-                    errors.location ? 'border-red-500' : ''
+                    errors.location ? "border-red-500" : ""
                   }`}
                   placeholder="Company location"
                   required
@@ -190,13 +201,15 @@ const EmployerOnboarding = () => {
                   onChange={handleInputChange}
                   rows={4}
                   className={`w-full p-4 border-2 rounded-xl focus:border-black outline-none resize-none ${
-                    errors.description ? 'border-red-500' : ''
+                    errors.description ? "border-red-500" : ""
                   }`}
                   placeholder="Tell potential candidates about your company..."
                   required
                 />
                 {errors.description && (
-                  <p className="text-red-500 text-sm mt-1">{errors.description}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.description}
+                  </p>
                 )}
               </div>
 
@@ -221,11 +234,11 @@ const EmployerOnboarding = () => {
   return (
     <div className="fixed inset-0 overflow-hidden">
       {/* Background Image */}
-      <div 
+      <div
         className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url(${bgImage})`,
-          filter: 'brightness(0.9)'
+          filter: "brightness(0.9)",
         }}
       />
 
@@ -234,23 +247,21 @@ const EmployerOnboarding = () => {
         <div className="flex-1 flex flex-col justify-end">
           {/* White Card */}
           <div className="bg-white rounded-t-[32px] p-8 shadow-lg w-full max-w-none">
-            <div className="max-w-2xl mx-auto">
-              {renderStep()}
-            </div>
+            <div className="max-w-2xl mx-auto">{renderStep()}</div>
           </div>
 
           {/* Progress Bar */}
           <div className="fixed bottom-0 left-0 right-0 z-[100]">
             <div className="h-2 bg-gray-200">
-              <motion.div 
+              <motion.div
                 className="h-full bg-black"
                 initial={{ width: 0 }}
-                animate={{ 
+                animate={{
                   width: `${(currentStep / totalSteps) * 100}%`,
                 }}
-                transition={{ 
+                transition={{
                   duration: 0.3,
-                  ease: "easeInOut"
+                  ease: "easeInOut",
                 }}
               />
             </div>

@@ -2,10 +2,17 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "../../../contexts/LanguageContext";
-import bgImage from '../../../assets/bg.jpg';
+import bgImage from "../../../assets/bg.jpg";
 import axios from "axios";
 
-const UserType = ({ selectedType, onSelect, onBack, formData, currentStep, totalSteps }) => {
+const UserType = ({
+  selectedType,
+  onSelect,
+  onBack,
+  formData,
+  currentStep,
+  totalSteps,
+}) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -25,11 +32,11 @@ const UserType = ({ selectedType, onSelect, onBack, formData, currentStep, total
   const handleGetStarted = async () => {
     if (selectedType) {
       if (selectedType === "employer") {
-        navigate("/employer-onboarding",{state:{formDataUser:formData}});
+        navigate("/employer-onboarding", { state: { formDataUser: formData } });
       } else if (selectedType === "job_seeker") {
         try {
           const response = await axios.post(
-            "http://localhost:4002/api/users/",
+            "https://disqualified.onrender.com/api/users/",
             {
               ...formData,
               role: "employee",
@@ -53,11 +60,11 @@ const UserType = ({ selectedType, onSelect, onBack, formData, currentStep, total
   return (
     <div className="fixed inset-0 overflow-hidden">
       {/* Background Image */}
-      <div 
+      <div
         className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url(${bgImage})`,
-          filter: 'brightness(0.9)'
+          filter: "brightness(0.9)",
         }}
       />
 
@@ -67,32 +74,40 @@ const UserType = ({ selectedType, onSelect, onBack, formData, currentStep, total
           {/* White Card */}
           <div className="bg-white rounded-t-[32px] p-8 shadow-lg w-full max-w-none">
             <div className="max-w-2xl mx-auto">
-              <motion.button 
+              <motion.button
                 className="text-black mb-6 flex items-center"
                 onClick={onBack}
                 whileHover={{ x: -4 }}
                 whileTap={{ scale: 0.95 }}
               >
-                ← {t('back')}
+                ← {t("back")}
               </motion.button>
 
-              <h2 className="text-2xl font-semibold mb-8">{t('whatBringsYou')}</h2>
+              <h2 className="text-2xl font-semibold mb-8">
+                {t("whatBringsYou")}
+              </h2>
 
               <div className="space-y-4 mb-8">
                 {userTypes.map((type) => (
                   <motion.div
                     key={type.id}
                     className={`p-6 rounded-xl border-2 cursor-pointer ${
-                      selectedType === type.id 
-                        ? 'border-black bg-black text-white' 
-                        : 'border-gray-200 hover:border-gray-300'
+                      selectedType === type.id
+                        ? "border-black bg-black text-white"
+                        : "border-gray-200 hover:border-gray-300"
                     }`}
                     onClick={() => onSelect(type.id)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <h3 className="text-xl font-medium mb-2">{type.title}</h3>
-                    <p className={selectedType === type.id ? 'text-gray-200' : 'text-gray-500'}>
+                    <p
+                      className={
+                        selectedType === type.id
+                          ? "text-gray-200"
+                          : "text-gray-500"
+                      }
+                    >
                       {type.description}
                     </p>
                   </motion.div>
@@ -106,7 +121,7 @@ const UserType = ({ selectedType, onSelect, onBack, formData, currentStep, total
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}
               >
-                {t('getStarted')}
+                {t("getStarted")}
               </motion.button>
             </div>
           </div>
@@ -114,15 +129,15 @@ const UserType = ({ selectedType, onSelect, onBack, formData, currentStep, total
           {/* Progress Bar */}
           <div className="fixed bottom-0 left-0 right-0 z-[100]">
             <div className="h-2 bg-gray-200">
-              <motion.div 
+              <motion.div
                 className="h-full bg-black"
                 initial={{ width: 0 }}
-                animate={{ 
+                animate={{
                   width: `${(currentStep / totalSteps) * 100}%`,
                 }}
-                transition={{ 
+                transition={{
                   duration: 0.3,
-                  ease: "easeInOut"
+                  ease: "easeInOut",
                 }}
               />
             </div>
