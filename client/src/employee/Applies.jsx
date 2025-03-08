@@ -109,7 +109,7 @@ const Applies = () => {
     // Set up interval to fetch every 2 minutes while the page is open
     const interval = setInterval(() => {
       fetchApplications();
-    }, 120000); // 2 minutes
+    }, 12000); // 2 minutes
 
     setRefreshInterval(interval);
 
@@ -724,12 +724,8 @@ const Applies = () => {
           </div>
         </div>
       )}
-
-      {/* Toast notification */}
-      {notification && (
-        <div
-          className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in ${
-            notification.type === "error"
-              ? "bg-red-500 text-white"
-              : "bg-black text-white"
-          }`
+      </div>
+  )
+}
+export default Applies;
+      

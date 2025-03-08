@@ -36,6 +36,10 @@ const createUser = async (req, res) => {
     lastName: req.body.lastName,
     phone: req.body.phone,
     role: req.body.role,
+    companyName : req.body.companyName,
+    companyDiscription : req.body.description,
+    companyLocation : req.body.companyLocation,
+    industry : req.body.industry,
   });
 
   try {

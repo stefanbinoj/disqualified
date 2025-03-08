@@ -50,7 +50,7 @@ const EmployerOnboarding = () => {
         try {
           const response = await axios.post(
             "http://localhost:4002/api/users/",
-            { ...formDataUser, role: "employer", phone: formData.phoneNumber, ...formData ,companyDiscription:formData.description,companyLocation:formData.location,industry:formData.industry}
+            { ...formDataUser, role: "employer", phone: formDataUser.phoneNumber, ...formData ,companyDiscription:formData.description,companyLocation:formData.location,industry:formData.industry}
           );
           if (response.data.token) {
             localStorage.setItem("token", response.data.token);
