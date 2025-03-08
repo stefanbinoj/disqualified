@@ -11,6 +11,8 @@ import {
   CheckCircle2,
   Star,
   BookmarkIcon,
+  Bell,
+  RefreshCw,
 } from "lucide-react";
 import company from "../assets/company.png";
 import { useNavigate } from "react-router-dom";
@@ -26,6 +28,8 @@ const Applies = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [savedJobs, setSavedJobs] = useState(new Set());
   const [notification, setNotification] = useState(null);
+  const [refreshInterval, setRefreshInterval] = useState(null);
+  const [lastRefreshed, setLastRefreshed] = useState(new Date());
 
   const navigate = useNavigate();
 
@@ -35,14 +39,52 @@ const Applies = () => {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // Memoize fetchApplications to use in dependencies
+  // Enhanced fetchApplications to ensure we get latest status from backend
   const fetchApplications = useCallback(async () => {
     try {
+      setLoading(true);
+
       const response = await axiosWithHeader.get("/users/applied");
+      console.log("Fetched applications from API:", response.data);
+
       if (response.data.success) {
-        setApplications(response.data.applied);
-        console.log("Fetched applications:", response.data.applied); // Debug log
-        return response.data.applied;
+        // Get applications from backend
+        const apiApplications = response.data.applied || [];
+
+        // Load any temporary applications from localStorage
+        const tempApps = JSON.parse(
+          localStorage.getItem("tempApplications") || "[]"
+        );
+
+        // Identify which temp applications may need to be removed
+        // (they've been processed by the backend)
+        const apiJobIds = new Set(apiApplications.map((app) => app.job._id));
+        const filteredTempApps = tempApps.filter((app) => {
+          // Keep temp apps only if they're not already in the API response
+          // and they're not older than 24 hours
+          const isOld =
+            new Date() - new Date(app.appliedDate) > 24 * 60 * 60 * 1000;
+          const existsInApi = apiJobIds.has(app.job._id);
+          return !existsInApi && !isOld;
+        });
+
+        // Update localStorage with filtered temp apps
+        localStorage.setItem(
+          "tempApplications",
+          JSON.stringify(filteredTempApps)
+        );
+
+        // Combine API and remaining temp applications, with API apps taking precedence
+        const combinedApps = [...apiApplications, ...filteredTempApps];
+
+        // Sort by date (newest first)
+        combinedApps.sort(
+          (a, b) => new Date(b.appliedDate) - new Date(a.appliedDate)
+        );
+
+        setApplications(combinedApps);
+        setLastRefreshed(new Date());
+        return combinedApps;
       } else {
         setError("Failed to fetch applications");
         return [];
@@ -54,8 +96,45 @@ const Applies = () => {
       setError(errorMsg);
       console.error("Applications fetch error:", err);
       return [];
+    } finally {
+      setLoading(false);
     }
   }, []);
+
+  // Set up polling to refresh application status periodically
+  useEffect(() => {
+    // Fetch on initial load
+    fetchApplications();
+
+    // Set up interval to fetch every 2 minutes while the page is open
+    const interval = setInterval(() => {
+      fetchApplications();
+    }, 120000); // 2 minutes
+
+    setRefreshInterval(interval);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [fetchApplications]);
+
+  // Also refresh when user returns to the page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // If it's been more than 1 minute since last refresh
+        if (new Date() - lastRefreshed > 60000) {
+          fetchApplications();
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [fetchApplications, lastRefreshed]);
 
   const fetchSuggestedJobs = useCallback(async () => {
     try {
@@ -73,7 +152,8 @@ const Applies = () => {
         type: job.type || job.position || "Full Time",
         description: job.description || "No description provided",
         skills: job.skills || [],
-        logo: company,
+        logo: job.userId?.profilePicture || job.companyLogo || company,
+        employerId: job.userId?._id,
       }));
 
       setSuggestedJobs(transformedJobs);
@@ -116,7 +196,38 @@ const Applies = () => {
   }, [fetchApplications, fetchSuggestedJobs]);
 
   const handleApplicationClick = (application) => {
-    setSelectedApplication(application);
+    // If this is a real application (not a temp one), fetch latest status before showing details
+    if (!application._id.startsWith("temp-")) {
+      // Refresh this specific application's status
+      axiosWithHeader
+        .get(`/jobs/applications/${application._id}`)
+        .then((response) => {
+          if (response.data && response.data.success) {
+            // Update this application in the list with latest status
+            setApplications((prevApps) =>
+              prevApps.map((app) =>
+                app._id === application._id
+                  ? { ...app, status: response.data.application.status }
+                  : app
+              )
+            );
+
+            // Now show the updated application
+            setSelectedApplication({
+              ...application,
+              status: response.data.application.status,
+            });
+          } else {
+            setSelectedApplication(application);
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching application details:", err);
+          setSelectedApplication(application);
+        });
+    } else {
+      setSelectedApplication(application);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -128,7 +239,7 @@ const Applies = () => {
     });
   };
 
-  // Function to get status color
+  // Update getStatusColor function to handle all possible statuses
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case "offered":
@@ -143,6 +254,24 @@ const Applies = () => {
       case "pending":
       default:
         return "text-yellow-500";
+    }
+  };
+
+  // Get a more user-friendly status message
+  const getStatusMessage = (status) => {
+    switch (status?.toLowerCase()) {
+      case "offered":
+      case "accepted":
+        return "Congratulations! Your application has been accepted.";
+      case "rejected":
+        return "Unfortunately, your application was not selected at this time.";
+      case "interviewed":
+        return "You've been interviewed for this position.";
+      case "viewed":
+        return "Your application has been viewed by the employer.";
+      case "pending":
+      default:
+        return "Your application is pending review by the employer.";
     }
   };
 
@@ -231,6 +360,16 @@ const Applies = () => {
     }
   };
 
+  // Manual refresh function
+  const handleManualRefresh = () => {
+    showNotification("Refreshing applications...");
+    fetchApplications()
+      .then(() => showNotification("Applications refreshed!"))
+      .catch(() =>
+        showNotification("Failed to refresh. Try again later.", "error")
+      );
+  };
+
   if (loading)
     return (
       <div className="min-h-screen flex flex-col">
@@ -258,9 +397,28 @@ const Applies = () => {
         {!selectedApplication ? (
           // Applications List
           <div className="w-full overflow-y-auto p-4">
-            <h2 className="text-xl font-semibold mb-4 px-2">
-              Your Applications
-            </h2>
+            <div className="flex items-center justify-between mb-4 px-2">
+              <h2 className="text-xl font-semibold">Your Applications</h2>
+              <button
+                onClick={handleManualRefresh}
+                className="text-sm text-gray-600 flex items-center gap-1 hover:text-black"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh
+              </button>
+            </div>
+
+            {loading && applications.length > 0 && (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+              </div>
+            )}
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                <p>{error}</p>
+              </div>
+            )}
 
             {applications.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
@@ -278,7 +436,12 @@ const Applies = () => {
                       <div
                         className={`mt-1 ${getStatusColor(application.status)}`}
                       >
-                        <Circle className="w-4 h-4 fill-current" />
+                        {application.status?.toLowerCase() === "accepted" ||
+                        application.status?.toLowerCase() === "offered" ? (
+                          <CheckCircle2 className="w-4 h-4 fill-current" />
+                        ) : (
+                          <Circle className="w-4 h-4 fill-current" />
+                        )}
                       </div>
                       <div className="flex-1">
                         <div className="flex justify-between items-start">
@@ -298,7 +461,7 @@ const Applies = () => {
                           <span className="mx-2">•</span>
                           <span className={getStatusColor(application.status)}>
                             {application.status?.charAt(0).toUpperCase() +
-                              application.status?.slice(1)}
+                              application.status?.slice(1) || "Pending"}
                           </span>
                         </div>
                       </div>
@@ -335,6 +498,10 @@ const Applies = () => {
                         src={job.logo}
                         alt={job.company}
                         className="w-12 h-12 rounded-lg object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null; 
+                          e.target.src = company; // Fallback to default image on error
+                        }}
                       />
                     </div>
                     <div className="mt-2 space-y-2">
@@ -353,7 +520,7 @@ const Applies = () => {
             )}
           </div>
         ) : (
-          // Application Detail View
+          // Application Detail View - Enhanced with more status details
           <div className="w-full overflow-y-auto">
             <div className="border-b border-gray-100 sticky top-0 bg-white">
               <button
@@ -382,17 +549,69 @@ const Applies = () => {
                 </span>
               </div>
 
-              <div className="mt-6">
+              <div className="mt-8">
                 <h3 className="font-medium">Application Status</h3>
-                <p
-                  className={`mt-1 ${getStatusColor(
-                    selectedApplication.status
-                  )}`}
+                <div
+                  className={`mt-2 p-4 rounded-lg border ${
+                    selectedApplication.status?.toLowerCase() === "accepted" ||
+                    selectedApplication.status?.toLowerCase() === "offered"
+                      ? "border-green-200 bg-green-50"
+                      : selectedApplication.status?.toLowerCase() === "rejected"
+                      ? "border-red-200 bg-red-50"
+                      : "border-yellow-200 bg-yellow-50"
+                  }`}
                 >
-                  {selectedApplication.status?.charAt(0).toUpperCase() +
-                    selectedApplication.status?.slice(1)}
-                </p>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`${getStatusColor(
+                        selectedApplication.status
+                      )}`}
+                    >
+                      {selectedApplication.status?.toLowerCase() ===
+                        "accepted" ||
+                      selectedApplication.status?.toLowerCase() ===
+                        "offered" ? (
+                        <CheckCircle2 className="w-5 h-5 fill-current" />
+                      ) : (
+                        <Circle className="w-5 h-5 fill-current" />
+                      )}
+                    </div>
+                    <div>
+                      <p
+                        className={`font-medium ${getStatusColor(
+                          selectedApplication.status
+                        )}`}
+                      >
+                        {selectedApplication.status?.charAt(0).toUpperCase() +
+                          selectedApplication.status?.slice(1) || "Pending"}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {getStatusMessage(selectedApplication.status)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              {/* If application is accepted, show a call-to-action */}
+              {(selectedApplication.status?.toLowerCase() === "accepted" ||
+                selectedApplication.status?.toLowerCase() === "offered") && (
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-blue-700 font-medium">
+                    The employer has accepted your application!
+                  </p>
+                  <p className="text-sm text-blue-600 mt-1">
+                    Check your inbox for further instructions on next steps.
+                  </p>
+                  <button
+                    onClick={() => navigate("/employee/inbox")}
+                    className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 flex items-center gap-2"
+                  >
+                    <Bell className="w-4 h-4" />
+                    Go to Inbox
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -408,6 +627,10 @@ const Applies = () => {
                   src={selectedJob.logo}
                   alt={selectedJob.company}
                   className="w-16 h-16 rounded-lg object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null; 
+                    e.target.src = company; // Fallback to default image on error
+                  }}
                 />
                 <div>
                   <h2 className="text-xl font-semibold">{selectedJob.title}</h2>
@@ -509,30 +732,4 @@ const Applies = () => {
             notification.type === "error"
               ? "bg-red-500 text-white"
               : "bg-black text-white"
-          }`}
-        >
-          {notification.message}
-        </div>
-      )}
-
-      {/* Add custom animation CSS */}
-      <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translate(-50%, 20px);
-          }
-          to {
-            opacity: 1;
-            transform: translate(-50%, 0);
-          }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.3s ease-out forwards;
-        }
-      `}</style>
-    </div>
-  );
-};
-
-export default Applies;
+          }`

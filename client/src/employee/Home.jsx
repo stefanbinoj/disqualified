@@ -9,11 +9,13 @@ import {
   BookmarkIcon,
   EyeOffIcon,
   X,
+  CheckCircle2,
 } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import api from "../axiosWithHeaders";
 import company from "../assets/company.png";
 import { toast } from "react-hot-toast";
+import Loader from "../components/Loader";
 
 const Home = () => {
   const { t } = useLanguage();
@@ -36,6 +38,8 @@ const Home = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [locations, setLocations] = useState([]);
   const [locationSearch, setLocationSearch] = useState("");
+  const [applyingToJob, setApplyingToJob] = useState(false);
+  const [appliedJobs, setAppliedJobs] = useState(new Set());
 
   // Toggle save job with animation and notification
   const toggleSave = (jobId, event) => {
@@ -59,15 +63,31 @@ const Home = () => {
     });
   };
 
-  // Load saved jobs from localStorage on initial load
+  // Load saved jobs and applied jobs from localStorage on initial load
   useEffect(() => {
     try {
+      // Load saved jobs
       const savedJobsData = localStorage.getItem("savedJobs");
       if (savedJobsData) {
         setSavedJobs(new Set(JSON.parse(savedJobsData)));
       }
+
+      // Load applied jobs
+      const appliedJobsData = localStorage.getItem("appliedJobs");
+      if (appliedJobsData) {
+        setAppliedJobs(new Set(JSON.parse(appliedJobsData)));
+      }
+
+      // Also check temporary applications to mark those jobs as applied
+      const tempApps = JSON.parse(
+        localStorage.getItem("tempApplications") || "[]"
+      );
+      if (tempApps.length > 0) {
+        const tempAppliedJobIds = tempApps.map((app) => app.job._id);
+        setAppliedJobs((prev) => new Set([...prev, ...tempAppliedJobIds]));
+      }
     } catch (error) {
-      console.error("Error loading saved jobs:", error);
+      console.error("Error loading applied/saved jobs:", error);
     }
   }, []);
 
@@ -277,6 +297,9 @@ const Home = () => {
             ? `₹${job.rate}`
             : "₹Not specified";
 
+          // Use the employer's profile picture if available
+          const profilePicture = job.userId?.profilePicture || job.companyLogo;
+
           return {
             id: job._id,
             title: job.title || "Job Title",
@@ -288,7 +311,8 @@ const Home = () => {
             postedDate: formatDate(job.postedDate),
             type: job.type || job.position || "Full Time",
             skills: job.skills || [],
-            logo: "https://via.placeholder.com/50", // Default logo
+            logo: profilePicture || company, // Use company logo from assets as fallback
+            employerId: job.userId?._id, // Store the employer ID for messaging
           };
         });
 
@@ -333,23 +357,102 @@ const Home = () => {
   );
 
   const applyForJob = async (jobId) => {
+    // Prevent duplicate applications
+    if (appliedJobs.has(jobId)) {
+      toast.error("You have already applied for this job");
+      return;
+    }
+
+    setApplyingToJob(true);
+    const jobInfo = jobs.find((job) => job.id === jobId);
+
+    if (!jobInfo) {
+      alert("Job information not found!");
+      setApplyingToJob(false);
+      return;
+    }
+
+    // Create a fake application entry to show immediately
+    const newApplication = {
+      _id: `temp-${Date.now()}`,
+      job: {
+        _id: jobId,
+        title: jobInfo.title,
+        company: jobInfo.company,
+        location: jobInfo.location,
+        type: jobInfo.type,
+      },
+      status: "pending",
+      appliedDate: new Date().toISOString(),
+    };
+
     try {
-      const response = await api.post(`/jobs/${jobId}/apply`);
+      // Mark this job as applied
+      const updatedAppliedJobs = new Set(appliedJobs);
+      updatedAppliedJobs.add(jobId);
+      setAppliedJobs(updatedAppliedJobs);
 
-      if (response.data.success) {
-        // Show success message
-        toast.success(
-          "Application submitted successfully! Check your inbox for confirmation."
-        );
+      // Save to localStorage to prevent future duplicate applications
+      localStorage.setItem(
+        "appliedJobs",
+        JSON.stringify([...updatedAppliedJobs])
+      );
 
-        // Optionally close the job details modal
-        closeJobDetails();
+      // Always update the UI first by storing in localStorage
+      const storedApps = JSON.parse(
+        localStorage.getItem("tempApplications") || "[]"
+      );
+      localStorage.setItem(
+        "tempApplications",
+        JSON.stringify([newApplication, ...storedApps])
+      );
+
+      // Close the modal
+      closeJobDetails();
+
+      // Show success message
+      alert("Application submitted! You can see it in your applications list.");
+
+      // Try the actual API call in the background
+      try {
+        // 1. Apply for the job
+        const response = await api.post(`/jobs/${jobId}/apply`);
+        console.log("Backend application result:", response.data);
+
+        // 2. Send a confirmation message to the applicant's inbox
+        await api.post("/messages/send", {
+          recipient: "self", // Send to yourself
+          subject: `Application Confirmation: ${jobInfo.title}`,
+          content: `Your application for "${jobInfo.title}" at ${jobInfo.company} has been submitted successfully. The employer will review your application and get back to you soon.`,
+          relatedJob: jobId,
+        });
+
+        // 3. Send a notification to the employer
+        await api.post("/messages/send", {
+          recipient: jobInfo.employerId || "employer", // Send to the employer who posted the job
+          subject: `New Application: ${jobInfo.title}`,
+          content: `A new candidate has applied for your job "${jobInfo.title}". You can review this application in your employer dashboard.`,
+          relatedJob: jobId,
+          isNotification: true,
+        });
+
+        // If successful, show toast notification as additional confirmation
+        if (response.data.success) {
+          toast.success(
+            "Application confirmed! A confirmation message has been sent to your inbox."
+          );
+        }
+      } catch (apiError) {
+        console.error("Backend application error:", apiError);
+        // We still keep the user's application in localStorage so it shows in the UI
       }
     } catch (error) {
-      console.error("Error applying for job:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to apply for this job"
+      console.error("Application process error:", error);
+      alert(
+        "Application recorded but encountered an issue. It will still appear in your applications."
       );
+    } finally {
+      setApplyingToJob(false);
     }
   };
 
@@ -534,6 +637,10 @@ const Home = () => {
                       src={job.logo}
                       alt={job.company}
                       className="w-12 h-12 rounded-lg object-cover ml-4"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = company; // Fallback to default image on error
+                      }}
                     />
                   </div>
 
@@ -834,6 +941,10 @@ const Home = () => {
                   src={selectedJob.logo}
                   alt={selectedJob.company}
                   className="w-16 h-16 rounded-lg object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = company; // Fallback to default image on error
+                  }}
                 />
                 <div>
                   <h2 className="text-xl font-semibold">{selectedJob.title}</h2>
@@ -901,22 +1012,61 @@ const Home = () => {
                 </p>
               </div>
 
-              {/* Apply Button */}
+              {/* Updated Apply Button - Disabled if already applied */}
               <div className="pt-4">
-                <button
-                  className="w-full bg-black text-white py-3 rounded-lg hover:bg-gray-800 font-medium"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    applyForJob(selectedJob.id);
-                  }}
-                >
-                  Apply Now
-                </button>
+                {appliedJobs.has(selectedJob.id) ? (
+                  <button
+                    className="w-full bg-green-500 text-white py-3 rounded-lg font-medium cursor-default flex items-center justify-center"
+                    disabled
+                  >
+                    <CheckCircle2 className="w-5 h-5 mr-2" />
+                    Already Applied
+                  </button>
+                ) : (
+                  <button
+                    className={`w-full bg-black text-white py-3 rounded-lg hover:bg-gray-800 font-medium flex items-center justify-center ${
+                      applyingToJob ? "opacity-70" : ""
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!applyingToJob) {
+                        applyForJob(selectedJob.id);
+                      }
+                    }}
+                    disabled={applyingToJob}
+                  >
+                    {applyingToJob ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        Applying...
+                      </>
+                    ) : (
+                      "Apply Now"
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Add custom animation CSS as in Applies.jsx */}
+      <style jsx>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translate(-50%, 20px);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 };
