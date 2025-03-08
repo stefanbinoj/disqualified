@@ -21,7 +21,7 @@ const Home = () => {
   const { t } = useLanguage();
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState("Kochi");
+  const [selectedLocation, setSelectedLocation] = useState("kochi");
   const [savedJobs, setSavedJobs] = useState(new Set());
   const [hiddenJobs, setHiddenJobs] = useState(new Set());
   const [selectedJob, setSelectedJob] = useState(null);
@@ -602,7 +602,7 @@ const Home = () => {
           ) : (
             <div
               key={job.id}
-              className="bg-white rounded-lg p-4 mb-0.5 shadow-sm border border-gray-100 mx-1 cursor-pointer relative group"
+              className="bg-white rounded-lg p-4 mb-4 mx-3 mt-2 shadow-sm border border-gray-100 mx-1 cursor-pointer relative group"
               onClick={() => openJobDetails(job)}
             >
               {/* Floating save button - visible on hover or when saved */}
@@ -630,7 +630,7 @@ const Home = () => {
                       <p className="text-gray-600">{job.company}</p>
                       <div className="flex items-center gap-1 mt-1">
                         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium">4.5</span>
+                        <span className="text-sm font-medium">{Math.round(( Math.random() * (4.5 - 3) + 3)*10)/10}</span>
                       </div>
                     </div>
                     <img
@@ -641,7 +641,7 @@ const Home = () => {
                         e.target.onerror = null;
                         e.target.src = company; // Fallback to default image on error
                       }}
-                    />
+                   />
                   </div>
 
                   <div className="mt-2 flex flex-wrap gap-2">

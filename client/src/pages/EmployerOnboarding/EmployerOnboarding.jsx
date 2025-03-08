@@ -3,8 +3,13 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import bgImage from '../../assets/bg.jpg';
+import { useLocation } from 'react-router-dom';
+import axios from 'axios';
 
 const EmployerOnboarding = () => {
+  const location = useLocation();
+  const { formDataUser } = location.state || {}; // Access formData from state
+
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
@@ -13,7 +18,7 @@ const EmployerOnboarding = () => {
     companyName: '',
     description: '',
     location: '',
-    industry: ''
+    industry: '' 
   });
   const [errors, setErrors] = useState({});
 
@@ -37,11 +42,25 @@ const EmployerOnboarding = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (currentStep === 1) {
       setCurrentStep(2);
     } else {
       if (validateForm()) {
+        try {
+          const response = await axios.post(
+            "http://localhost:4002/api/users/",
+            { ...formDataUser, role: "employer", phone: formData.phoneNumber, ...formData ,companyDiscription:formData.description,companyLocation:formData.location,industry:formData.industry}
+          );
+          if (response.data.token) {
+            localStorage.setItem("token", response.data.token);
+          }
+        } catch (error) {
+          console.error(
+            "Error:",
+            error.response ? error.response.data : error.message
+          );
+        }
         navigate('/employer/hire');
       }
     }

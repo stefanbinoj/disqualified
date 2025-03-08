@@ -25,21 +25,7 @@ const UserType = ({ selectedType, onSelect, onBack, formData, currentStep, total
   const handleGetStarted = async () => {
     if (selectedType) {
       if (selectedType === "employer") {
-        try {
-          const response = await axios.post(
-            "http://localhost:4002/api/users/",
-            { ...formData, role: "employer", phone: formData.phoneNumber }
-          );
-          if (response.data.token) {
-            localStorage.setItem("token", response.data.token);
-          }
-        } catch (error) {
-          console.error(
-            "Error:",
-            error.response ? error.response.data : error.message
-          );
-        }
-        navigate("/employer-onboarding");
+        navigate("/employer-onboarding",{state:{formDataUser:formData}});
       } else if (selectedType === "job_seeker") {
         try {
           const response = await axios.post(

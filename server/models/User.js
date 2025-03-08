@@ -42,6 +42,18 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    companyDiscription:{
+      type: String,
+      trim: true,
+    },
+    companyLocation:{
+      type: String,
+      trim: true,
+    },
+    industry:{
+      type: String,
+      trim: true,
+    },
     // Employer specific fields
     companyName: {
       type: String,
