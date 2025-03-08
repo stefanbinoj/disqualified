@@ -1,7 +1,6 @@
-
-import React from 'react';
-import { Settings } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Header = () => {
   return (
@@ -9,14 +8,17 @@ const Header = () => {
       <div className="flex items-center justify-between px-4 h-14">
         <div className="w-8" /> {/* Spacer for centering */}
         <div className="flex-1 flex justify-center">
-          <h1 className="text-2xl font-bold tracking-wider" style={{
-            fontFamily: 'sans-serif',
-            letterSpacing: '0.2em',
-            background: 'linear-gradient(to right, #000000, #333333)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            textTransform: 'uppercase'
-          }}>
+          <h1
+            className="text-2xl font-bold tracking-wider"
+            style={{
+              fontFamily: "sans-serif",
+              letterSpacing: "0.2em",
+              background: "linear-gradient(to right, #000000, #333333)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              textTransform: "uppercase",
+            }}
+          >
             Rozgar
           </h1>
         </div>
@@ -28,4 +30,4 @@ const Header = () => {
   );
 };
 
-export default Header; 
+export default Header;

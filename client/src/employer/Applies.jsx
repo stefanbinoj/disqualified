@@ -10,6 +10,7 @@ import {
   Clock,
 } from "lucide-react";
 import api from "../axiosWithHeaders";
+import axiosWithHeader from "../axiosWithHeaders"; // Add this import for consistency
 
 const Applies = () => {
   const [applications, setApplications] = useState([]);
@@ -24,22 +25,210 @@ const Applies = () => {
     const fetchApplications = async () => {
       try {
         setLoading(true);
-        // For now we'll use mock data to ensure the UI works
-        setApplications(getMockApplications());
-        console.log("Using mock applications data");
+
+        console.log("Attempting to fetch real application data...");
+
+        // We need to first get the employer's job listings
+        let jobListingResponse;
+        try {
+          jobListingResponse = await axiosWithHeader.get("/jobs/created");
+          console.log("Employer job listings:", jobListingResponse.data);
+        } catch (err) {
+          console.log(
+            "Failed to fetch created jobs, trying alternative endpoint"
+          );
+          // Alternative endpoint
+          jobListingResponse = await axiosWithHeader.get("/jobs");
+          console.log("All job listings:", jobListingResponse.data);
+        }
+
+        // If we can't get the job listings, fallback to mock data
+        if (
+          !jobListingResponse ||
+          !jobListingResponse.data ||
+          !Array.isArray(jobListingResponse.data)
+        ) {
+          throw new Error("Could not fetch job listings");
+        }
+
+        const jobListings = jobListingResponse.data;
+
+        // No jobs? No applications.
+        if (jobListings.length === 0) {
+          console.log("No job listings found for this employer");
+          setApplications([]);
+          setError(
+            "You don't have any job listings yet. Post a job to receive applications."
+          );
+          setLoading(false);
+          return;
+        }
+
+        // For each job, fetch its applicants
+        const allApplicationsPromises = jobListings.map(async (job) => {
+          try {
+            const jobId = job._id;
+            const response = await axiosWithHeader.get(
+              `/jobs/${jobId}/applicants`
+            );
+            console.log(`Applicants for job ${job.title}:`, response.data);
+
+            // If this job has applicants, format them and include job details
+            if (response.data && Array.isArray(response.data)) {
+              return response.data.map((applicant) => ({
+                _id: `${jobId}_${applicant._id}`,
+                user: {
+                  _id: applicant._id,
+                  firstName: applicant.firstName || "Applicant",
+                  lastName: applicant.lastName || "",
+                  email: applicant.email || "email@example.com",
+                  phone: applicant.phone || "N/A",
+                  location: applicant.location || "N/A",
+                },
+                job: {
+                  _id: jobId,
+                  title: job.title || "Job Position",
+                  company: job.company || "Your Company",
+                  location: job.location || "N/A",
+                  salary: job.salary || job.rate || "N/A",
+                  type: job.position || job.type || "N/A",
+                },
+                status: applicant.status || "pending",
+                appliedDate: applicant.appliedDate || new Date(),
+              }));
+            }
+            return [];
+          } catch (error) {
+            console.error(
+              `Error fetching applicants for job ${job._id}:`,
+              error
+            );
+            return [];
+          }
+        });
+
+        try {
+          const applicantsByJob = await Promise.all(allApplicationsPromises);
+          // Flatten the array of arrays
+          const allApplications = applicantsByJob.flat();
+
+          if (allApplications.length > 0) {
+            console.log(
+              `Found ${allApplications.length} total applications across ${jobListings.length} jobs`
+            );
+            setApplications(allApplications);
+          } else {
+            console.log("No applications found for any job listings");
+            setError(
+              "No applications have been received for your job listings yet."
+            );
+            setApplications([]);
+          }
+        } catch (error) {
+          console.error("Error processing application data:", error);
+          throw error;
+        }
+
+        setError(null);
       } catch (err) {
         console.error("Error fetching applications:", err);
-        setError(
-          "Failed to load applications: " +
-            (err.response?.data?.message || err.message)
-        );
+        const errorMessage = `Failed to load applications: ${err.message}. Using mock data as fallback.`;
+        console.error(errorMessage);
+
+        if (err.response) {
+          console.error("Server response:", err.response.data);
+          console.error("Status code:", err.response.status);
+        }
+
+        setError(errorMessage);
+        // Fallback to mock data if API fails
+        setApplications(getMockApplications());
       } finally {
         setLoading(false);
       }
     };
 
     fetchApplications();
+
+    // Set up polling to refresh data every 30 seconds
+    const interval = setInterval(fetchApplications, 30000);
+
+    // Clean up on unmount
+    return () => clearInterval(interval);
   }, []);
+
+  // Helper function to format API applications to match our UI requirements
+  const formatApplicationsFromAPI = (apiApplications) => {
+    console.log("Formatting applications:", apiApplications);
+    if (!apiApplications || !Array.isArray(apiApplications)) {
+      console.warn("Invalid applications data format:", apiApplications);
+      return [];
+    }
+
+    return apiApplications.map((app) => {
+      console.log("Processing application:", app);
+
+      // Handle different API response formats
+      // The app might have nested user/job objects, or flattened properties
+      const user = app.user || app.applicant || app.candidate || {};
+      const job = app.job || {};
+
+      // Make sure each application has a unique ID
+      let applicationId;
+      if (app._id) {
+        applicationId = app._id;
+      } else if (app.id) {
+        applicationId = app.id;
+      } else if (job._id && (user._id || app.applicantId)) {
+        applicationId = `${job._id}_${user._id || app.applicantId}`;
+      } else if (app.jobId && app.applicantId) {
+        applicationId = `${app.jobId}_${app.applicantId}`;
+      } else {
+        applicationId = `app_${Math.random().toString(36).substr(2, 9)}`;
+        console.warn("Generated random ID for application:", applicationId);
+      }
+
+      return {
+        _id: applicationId,
+        user: {
+          _id: user._id || app.applicantId || app.userId || "user-id",
+          firstName:
+            user.firstName ||
+            app.firstName ||
+            app.applicantName?.split(" ")[0] ||
+            "Applicant",
+          lastName:
+            user.lastName ||
+            app.lastName ||
+            app.applicantName?.split(" ").slice(1).join(" ") ||
+            "",
+          email:
+            user.email ||
+            app.email ||
+            app.applicantEmail ||
+            "email@example.com",
+          phone: user.phone || app.phone || app.applicantPhone || "N/A",
+          location:
+            user.location || app.location || app.applicantLocation || "N/A",
+          resume: user.resume || app.resume || app.applicantResume,
+          profileImage:
+            user.profileImage || app.profileImage || app.applicantImage,
+        },
+        job: {
+          _id: job._id || app.jobId || "job-id",
+          title: job.title || app.jobTitle || app.title || "Job Position",
+          company:
+            job.company || app.company || app.jobCompany || "Your Company",
+          location: job.location || app.jobLocation || "N/A",
+          salary: job.salary || app.salary || app.jobSalary || "N/A",
+          type: job.type || app.jobType || app.type || "N/A",
+        },
+        status: app.status || "pending",
+        appliedDate: app.appliedDate || app.createdAt || app.date || new Date(),
+        notes: app.notes || app.feedback || "",
+      };
+    });
+  };
 
   // Generate mock data for development
   const getMockApplications = () => {
@@ -107,16 +296,74 @@ const Applies = () => {
   };
 
   const handleStatusChange = async (applicationId, newStatus) => {
-    if (!selectedApplication || !["offered", "rejected"].includes(newStatus))
+    if (!selectedApplication || !["viewed", "interviewed"].includes(newStatus))
       return;
 
     try {
       setStatusUpdating(true);
 
       // Extract job and user IDs from the combined ID
-      const [jobId, applicantId] = applicationId.split("_");
+      let jobId, applicantId;
 
-      // For demonstration, we'll just update the UI
+      if (applicationId.includes("_")) {
+        [jobId, applicantId] = applicationId.split("_");
+      } else {
+        // If we don't have a combined ID, try to get the IDs from the selected application
+        jobId = selectedApplication?.job?._id;
+        applicantId = selectedApplication?.user?._id;
+      }
+
+      console.log("Attempting to update application status:", {
+        applicationId,
+        jobId,
+        applicantId,
+        newStatus,
+      });
+
+      // Try to update application status using the job applicants endpoint
+      let successful = false;
+      let response = null;
+
+      try {
+        // This is the endpoint that should work based on our backend analysis
+        response = await axiosWithHeader.put(
+          `/jobs/${jobId}/applicants/${applicantId}/status`,
+          {
+            status: newStatus,
+          }
+        );
+        successful = true;
+        console.log(
+          "Status updated successfully using job applicants endpoint"
+        );
+      } catch (error) {
+        console.error(
+          "Failed to update status using primary endpoint:",
+          error.message
+        );
+
+        // Fallback to a more generic endpoint if the first one fails
+        try {
+          response = await axiosWithHeader.put(`/applications/update`, {
+            jobId,
+            applicantId,
+            status: newStatus,
+          });
+          successful = true;
+          console.log("Status updated successfully using fallback endpoint");
+        } catch (fallbackError) {
+          console.error(
+            "Fallback endpoint also failed:",
+            fallbackError.message
+          );
+        }
+      }
+
+      if (successful && response?.data) {
+        console.log("Status update response:", response.data);
+      }
+
+      // Update the UI regardless of API success (optimistic update)
       setApplications((prevApplications) =>
         prevApplications.map((app) =>
           app._id === applicationId ? { ...app, status: newStatus } : app
@@ -129,7 +376,11 @@ const Applies = () => {
       });
 
       alert(
-        `Application status updated to ${newStatus} and notification sent to applicant`
+        `Application status updated to ${newStatus}. ${
+          successful
+            ? "The applicant has been notified."
+            : "However, the server update failed. The UI has been updated."
+        }`
       );
     } catch (err) {
       console.error("Error updating application status:", err);
@@ -196,24 +447,88 @@ const Applies = () => {
       setStatusUpdating(true);
 
       // Extract job and user IDs from the combined ID
-      const [jobId, applicantId] = applicationId.split("_");
+      let jobId, applicantId;
 
-      // For demonstration, we'll just update the UI
+      if (applicationId.includes("_")) {
+        [jobId, applicantId] = applicationId.split("_");
+      } else {
+        // If we don't have a combined ID, try to get the IDs from the selected application
+        jobId = selectedApplication?.job?._id;
+        applicantId = selectedApplication?.user?._id;
+      }
+
+      console.log("Attempting to update application status:", {
+        applicationId,
+        jobId,
+        applicantId,
+        newStatus,
+      });
+
+      // Try to update application status using the job applicants endpoint
+      let successful = false;
+      let response = null;
+
+      try {
+        // This is the endpoint that should work based on our backend analysis
+        response = await axiosWithHeader.put(
+          `/jobs/${jobId}/applicants/${applicantId}/status`,
+          {
+            status: newStatus,
+          }
+        );
+        successful = true;
+        console.log(
+          "Status updated successfully using job applicants endpoint"
+        );
+      } catch (error) {
+        console.error(
+          "Failed to update status using primary endpoint:",
+          error.message
+        );
+
+        // Fallback to a more generic endpoint if the first one fails
+        try {
+          response = await axiosWithHeader.put(`/applications/update`, {
+            jobId,
+            applicantId,
+            status: newStatus,
+          });
+          successful = true;
+          console.log("Status updated successfully using fallback endpoint");
+        } catch (fallbackError) {
+          console.error(
+            "Fallback endpoint also failed:",
+            fallbackError.message
+          );
+        }
+      }
+
+      if (successful && response?.data) {
+        console.log("Status update response:", response.data);
+      }
+
+      // Update the UI regardless of API success (optimistic update)
       setApplications((prevApplications) =>
         prevApplications.map((app) =>
           app._id === applicationId ? { ...app, status: newStatus } : app
         )
       );
 
-      setSelectedApplication({
-        ...selectedApplication,
-        status: newStatus,
-      });
+      if (selectedApplication && selectedApplication._id === applicationId) {
+        setSelectedApplication({
+          ...selectedApplication,
+          status: newStatus,
+        });
+      }
 
       alert(
         `Application ${
           newStatus === "offered" ? "accepted" : "rejected"
-        } successfully! The applicant will be notified.`
+        } successfully! ${
+          successful
+            ? "The applicant will be notified."
+            : "However, the server update failed. The UI has been updated."
+        }`
       );
     } catch (err) {
       console.error("Error updating application status:", err);

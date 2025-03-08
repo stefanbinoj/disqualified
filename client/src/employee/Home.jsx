@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Header from "./components/Header";
 import {
   Search,
@@ -10,9 +10,11 @@ import {
   EyeOffIcon,
   X,
   CheckCircle2,
+  RefreshCw,
 } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import api from "../axiosWithHeaders";
+import axiosWithHeader from "../axiosWithHeaders";
 import company from "../assets/company.png";
 import { toast } from "react-hot-toast";
 import Loader from "../components/Loader";
@@ -29,6 +31,9 @@ const Home = () => {
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [refreshInterval, setRefreshInterval] = useState(null);
   const [filters, setFilters] = useState({
     salaryRange: "",
     wageRange: "",
@@ -253,11 +258,20 @@ const Home = () => {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await api.get("/jobs");
+        // Using axiosWithHeader instead of api to match the working implementation
+        const response = await axiosWithHeader.get("/jobs");
+
+        // Check if response.data exists
+        if (!response.data) {
+          console.error("No data returned when fetching locations");
+          return;
+        }
+
         const uniqueLocations = [
-          ...new Set(response.data.map((job) => job.location)),
+          ...new Set(response.data.map((job) => job.location).filter(Boolean)),
         ];
         setLocations(uniqueLocations);
+        console.log("Locations fetched successfully:", uniqueLocations);
       } catch (error) {
         console.error("Error fetching locations:", error);
       }
@@ -266,19 +280,36 @@ const Home = () => {
     fetchLocations();
   }, []);
 
-  useEffect(() => {
-    const fetchJobs = async () => {
+  // Create a fetchJobs function with useCallback to prevent unnecessary re-renders
+  const fetchJobs = useCallback(
+    async (isInitialLoad = false) => {
       try {
-        setIsLoading(true);
+        // Use isLoading for initial page load, isRefreshing for subsequent refreshes
+        if (isInitialLoad) {
+          setIsLoading(true);
+        } else {
+          setIsRefreshing(true);
+        }
         setError(null);
 
-        const response = await api.get("/jobs", {
+        // Using axiosWithHeader instead of api to match the working implementation in Applies.jsx
+        const response = await axiosWithHeader.get("/jobs", {
           params: {
             search: searchQuery,
             location:
               selectedLocation !== "All Locations" ? selectedLocation : "",
           },
         });
+
+        // Check if response.data exists and is not empty
+        if (!response.data || response.data.length === 0) {
+          console.log("No jobs found or empty response");
+          setJobs([]);
+          setFilteredJobs([]);
+          return;
+        }
+
+        console.log("Jobs fetched successfully:", response.data);
 
         const transformedJobs = response.data.map((job) => {
           const companyName =
@@ -318,20 +349,76 @@ const Home = () => {
 
         setJobs(transformedJobs);
         setFilteredJobs(transformedJobs);
+        setLastRefreshed(new Date());
       } catch (error) {
         console.error("Error fetching jobs:", error);
         setError(error.response?.data?.message || "Failed to fetch jobs");
       } finally {
-        setIsLoading(false);
+        if (isInitialLoad) {
+          setIsLoading(false);
+        } else {
+          setIsRefreshing(false);
+        }
       }
-    };
+    },
+    [searchQuery, selectedLocation]
+  );
 
+  // Set up automatic refresh with debounce for search/location changes
+  useEffect(() => {
     const timeoutId = setTimeout(() => {
-      fetchJobs();
+      fetchJobs(false); // Not initial load, just a search/filter change
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, selectedLocation]);
+  }, [searchQuery, selectedLocation, fetchJobs]);
+
+  // Initial data load
+  useEffect(() => {
+    fetchJobs(true); // Initial load
+  }, [fetchJobs]);
+
+  // Set up polling to refresh job listings periodically - every 30 seconds
+  useEffect(() => {
+    // Set up interval to fetch every 30 seconds while the page is open
+    const interval = setInterval(() => {
+      console.log("Auto-refreshing job listings...");
+      fetchJobs(false); // Not initial load, just a refresh
+    }, 30000); // 30 seconds
+
+    setRefreshInterval(interval);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [fetchJobs]);
+
+  // Also refresh when user returns to the page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // If it's been more than 30 seconds since last refresh
+        if (new Date() - lastRefreshed > 30000) {
+          console.log("Page visible again, refreshing job listings...");
+          fetchJobs(false); // Not initial load, just a refresh
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [fetchJobs, lastRefreshed]);
+
+  // Add manual refresh function
+  const handleManualRefresh = () => {
+    toast.success("Refreshing job listings...");
+    fetchJobs(false) // Not initial load, just a manual refresh
+      .then(() => toast.success("Job listings refreshed!"))
+      .catch(() => toast.error("Failed to refresh. Try again later."));
+  };
 
   // Apply active filters whenever jobs or active filters change
   useEffect(() => {
@@ -415,29 +502,12 @@ const Home = () => {
 
       // Try the actual API call in the background
       try {
-        // 1. Apply for the job
-        const response = await api.post(`/jobs/${jobId}/apply`);
+        // Use axiosWithHeader instead of api to match Applies.jsx implementation
+        const response = await axiosWithHeader.post(`/jobs/${jobId}/apply`);
         console.log("Backend application result:", response.data);
 
-        // 2. Send a confirmation message to the applicant's inbox
-        await api.post("/messages/send", {
-          recipient: "self", // Send to yourself
-          subject: `Application Confirmation: ${jobInfo.title}`,
-          content: `Your application for "${jobInfo.title}" at ${jobInfo.company} has been submitted successfully. The employer will review your application and get back to you soon.`,
-          relatedJob: jobId,
-        });
-
-        // 3. Send a notification to the employer
-        await api.post("/messages/send", {
-          recipient: jobInfo.employerId || "employer", // Send to the employer who posted the job
-          subject: `New Application: ${jobInfo.title}`,
-          content: `A new candidate has applied for your job "${jobInfo.title}". You can review this application in your employer dashboard.`,
-          relatedJob: jobId,
-          isNotification: true,
-        });
-
         // If successful, show toast notification as additional confirmation
-        if (response.data.success) {
+        if (response.data && response.data.success) {
           toast.success(
             "Application confirmed! A confirmation message has been sent to your inbox."
           );
@@ -483,7 +553,6 @@ const Home = () => {
   return (
     <div className="bg-gray-50 min-h-screen">
       <Header />
-
       {/* Search Section */}
       <div className="pt-14 px-4 pb-4 bg-white shadow-sm">
         <div className="relative flex items-center gap-2 mt-3">
@@ -509,6 +578,22 @@ const Home = () => {
               {selectedLocation || "All Locations"}
             </span>
             <ChevronDown className="w-4 h-4 text-gray-500" />
+          </button>
+
+          {/* Refresh Button */}
+          <button
+            onClick={handleManualRefresh}
+            className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:border-gray-400"
+            disabled={isRefreshing}
+          >
+            <RefreshCw
+              className={`w-4 h-4 text-gray-500 ${
+                isRefreshing ? "animate-spin" : ""
+              }`}
+            />
+            <span className="text-sm text-gray-700">
+              {isRefreshing ? "Refreshing..." : "Refresh"}
+            </span>
           </button>
 
           {/* Search Input */}
@@ -630,7 +715,10 @@ const Home = () => {
                       <p className="text-gray-600">{job.company}</p>
                       <div className="flex items-center gap-1 mt-1">
                         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium">{Math.round(( Math.random() * (4.5 - 3) + 3)*10)/10}</span>
+                        <span className="text-sm font-medium">
+                          {Math.round((Math.random() * (4.5 - 3) + 3) * 10) /
+                            10}
+                        </span>
                       </div>
                     </div>
                     <img
@@ -641,7 +729,7 @@ const Home = () => {
                         e.target.onerror = null;
                         e.target.src = company; // Fallback to default image on error
                       }}
-                   />
+                    />
                   </div>
 
                   <div className="mt-2 flex flex-wrap gap-2">
