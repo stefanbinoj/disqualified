@@ -187,7 +187,7 @@ const Hire = () => {
                   className={`w-full px-4 py-3 rounded-lg border ${
                     errors.title ? "border-red-500" : "border-gray-300"
                   } focus:outline-none focus:border-black`}
-                  placeholder="e.g. Senior React Developer"
+                  placeholder="e.g. Electrician"
                 />
                 {errors.title && (
                   <p className="text-red-500 text-sm mt-1">{errors.title}</p>
@@ -216,7 +216,7 @@ const Hire = () => {
                       className={`w-full pl-12 pr-4 py-3 rounded-lg border ${
                         errors.location ? "border-red-500" : "border-gray-300"
                       } focus:outline-none focus:border-black`}
-                      placeholder="e.g. Bangalore, India"
+                      placeholder="e.g. kochi"
                     />
                   </div>
                   {errors.location && (
@@ -239,7 +239,6 @@ const Hire = () => {
                     <option>Full Time</option>
                     <option>Part Time</option>
                     <option>Contract</option>
-                    <option>Freelance</option>
                   </select>
                 </div>
               </div>
