@@ -36,7 +36,7 @@ const UserType = ({
       } else if (selectedType === "job_seeker") {
         try {
           const response = await axios.post(
-            "https://disqualified.onrender.com/api/users/",
+            "http://192.168.1.86:4002/api/users/",
             {
               ...formData,
               role: "employee",
