@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from "react";
 import Header from "./components/Header";
-import { Mail, Phone, MapPin, Pencil, X } from "lucide-react";
+import { Mail, Phone, MapPin, Pencil } from "lucide-react";
 import bg from "../assets/bg.png";
-import axios from "axios";
 import api from "../axiosWithHeaders";
+
 const Profile = () => {
   // State for profile data
   const [profileData, setProfileData] = useState({
     name: "",
-    title: "",
-    status: "",
     email: "",
     phone: "",
     location: "Kochi, Kerala",
@@ -20,7 +18,7 @@ const Profile = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const response = await api.get("/users/"); // No need for full URL or credentials
+        const response = await api.get("/users/");
         const { user } = response.data;
 
         setProfileData((prevState) => {
@@ -33,14 +31,7 @@ const Profile = () => {
           }
 
           // Update other fields only if they exist in response
-          const fieldsToUpdate = [
-            "phone",
-            "title",
-            "status",
-            "email",
-            "location",
-            "about",
-          ];
+          const fieldsToUpdate = ["phone", "email", "location", "about"];
           fieldsToUpdate.forEach((field) => {
             if (user[field]) {
               newState[field] = user[field];
@@ -114,8 +105,6 @@ const Profile = () => {
           updateData = {
             firstName,
             lastName,
-            title: editValues.title,
-            status: editValues.status,
           };
           break;
 
@@ -153,17 +142,18 @@ const Profile = () => {
           [section]: false,
         }));
 
-        // You might want to show a success message
         console.log("Profile updated successfully");
       }
     } catch (error) {
       // Handle errors
+      setError((prev) => ({
+        ...prev,
+        [section]: error.response?.data?.message || "Failed to update profile",
+      }));
       console.error(
         "Error updating profile:",
         error.response?.data?.message || error.message
       );
-      // You might want to show an error message to the user
-      // and keep the edit mode open
     } finally {
       setIsLoading((prev) => ({ ...prev, [section]: false }));
     }
@@ -183,7 +173,9 @@ const Profile = () => {
   // Add error display
   const ErrorMessage = ({ section }) =>
     error[section] && (
-      <div className="text-red-500 text-sm mt-2">{error[section]}</div>
+      <div className="text-red-500 text-sm mt-2 text-center">
+        {error[section]}
+      </div>
     );
 
   // Cancel editing for any section
@@ -199,19 +191,19 @@ const Profile = () => {
     <div className="bg-gray-50 min-h-screen">
       <Header />
 
-      <div className="pt-14 px-4 pb-4">
-        <div className="max-w-2xl mx-auto">
+      <div className="pt-20 px-6 pb-8 flex justify-center">
+        <div className="max-w-2xl w-full">
           {/* Profile Card */}
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-4">
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
             {/* Basic Info */}
-            <div className="flex flex-col items-center text-center mb-8">
-              <div className="relative mb-4">
+            <div className="flex flex-col items-center text-center mb-12">
+              <div className="relative mb-6">
                 <img
                   src={profileData.image}
                   alt="Profile"
-                  className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md"
+                  className="w-36 h-36 rounded-full object-cover border-4 border-white shadow-md"
                 />
-                <label className="absolute bottom-0 right-0 p-2 bg-black rounded-full text-white hover:bg-gray-800 cursor-pointer">
+                <label className="absolute bottom-0 right-0 p-2 bg-black rounded-full text-white hover:bg-gray-800 cursor-pointer shadow-md transition-colors">
                   <input
                     type="file"
                     className="hidden"
@@ -223,7 +215,7 @@ const Profile = () => {
               </div>
 
               {editMode.basic ? (
-                <div className="space-y-3 w-full max-w-sm">
+                <div className="space-y-4 w-full max-w-sm">
                   <input
                     type="text"
                     value={editValues.name}
@@ -233,38 +225,17 @@ const Profile = () => {
                         name: e.target.value,
                       }))
                     }
-                    className="w-full text-center text-xl font-semibold px-3 py-2 border rounded-lg"
+                    className="w-full text-center text-xl font-semibold px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+                    placeholder="Your Name"
                   />
-                  <input
-                    type="text"
-                    value={editValues.title}
-                    onChange={(e) =>
-                      setEditValues((prev) => ({
-                        ...prev,
-                        title: e.target.value,
-                      }))
-                    }
-                    className="w-full text-center px-3 py-2 border rounded-lg"
-                  />
-                  <input
-                    type="text"
-                    value={editValues.status}
-                    onChange={(e) =>
-                      setEditValues((prev) => ({
-                        ...prev,
-                        status: e.target.value,
-                      }))
-                    }
-                    className="w-full text-center text-sm px-3 py-2 border rounded-lg"
-                  />
-                  <div className="flex gap-2 justify-center mt-4">
+                  <div className="flex gap-3 justify-center mt-4">
                     <SaveButton
                       section="basic"
                       onClick={() => handleSave("basic")}
                     />
                     <button
                       onClick={() => handleCancel("basic")}
-                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       Cancel
                     </button>
@@ -272,22 +243,44 @@ const Profile = () => {
                   <ErrorMessage section="basic" />
                 </div>
               ) : (
-                <>
-                  <h1 className="text-2xl font-semibold">{profileData.name}</h1>
-                  <p className="text-gray-600 mt-1">{profileData.title}</p>
-                  <p className="text-gray-500 text-sm mt-1">
-                    {profileData.status}
-                  </p>
-                </>
+                <div className="relative inline-block">
+                  <h1 className="text-2xl font-semibold px-8">
+                    {profileData.name || "Add your name"}
+                  </h1>
+                  <button
+                    onClick={() =>
+                      setEditMode((prev) => ({ ...prev, basic: true }))
+                    }
+                    className="absolute right-0 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    aria-label="Edit name"
+                  >
+                    <Pencil className="w-4 h-4 text-gray-600" />
+                  </button>
+                </div>
               )}
             </div>
 
             {/* Contact Info */}
-            <div className="space-y-4">
+            <div className="space-y-6 mb-10">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">Contact Information</h2>
+                {!editMode.contact && (
+                  <button
+                    onClick={() =>
+                      setEditMode((prev) => ({ ...prev, contact: true }))
+                    }
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    aria-label="Edit contact information"
+                  >
+                    <Pencil className="w-4 h-4 text-gray-600" />
+                  </button>
+                )}
+              </div>
+
               {editMode.contact ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-lg">
-                    <Mail className="w-5 h-5 text-gray-600" />
+                    <Mail className="w-5 h-5 text-gray-600 min-w-5" />
                     <input
                       type="email"
                       value={editValues.email}
@@ -297,11 +290,12 @@ const Profile = () => {
                           email: e.target.value,
                         }))
                       }
-                      className="flex-1 bg-transparent border-b border-gray-300 focus:outline-none focus:border-black"
+                      className="flex-1 bg-transparent border-b border-gray-300 focus:outline-none focus:border-black px-2 py-1"
+                      placeholder="Email address"
                     />
                   </div>
                   <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-lg">
-                    <Phone className="w-5 h-5 text-gray-600" />
+                    <Phone className="w-5 h-5 text-gray-600 min-w-5" />
                     <input
                       type="tel"
                       value={editValues.phone}
@@ -311,11 +305,12 @@ const Profile = () => {
                           phone: e.target.value,
                         }))
                       }
-                      className="flex-1 bg-transparent border-b border-gray-300 focus:outline-none focus:border-black"
+                      className="flex-1 bg-transparent border-b border-gray-300 focus:outline-none focus:border-black px-2 py-1"
+                      placeholder="Phone number"
                     />
                   </div>
                   <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-lg">
-                    <MapPin className="w-5 h-5 text-gray-600" />
+                    <MapPin className="w-5 h-5 text-gray-600 min-w-5" />
                     <input
                       type="text"
                       value={editValues.location}
@@ -325,17 +320,18 @@ const Profile = () => {
                           location: e.target.value,
                         }))
                       }
-                      className="flex-1 bg-transparent border-b border-gray-300 focus:outline-none focus:border-black"
+                      className="flex-1 bg-transparent border-b border-gray-300 focus:outline-none focus:border-black px-2 py-1"
+                      placeholder="Your location"
                     />
                   </div>
-                  <div className="flex gap-2 justify-end mt-4">
+                  <div className="flex gap-3 justify-end mt-4">
                     <SaveButton
                       section="contact"
                       onClick={() => handleSave("contact")}
                     />
                     <button
                       onClick={() => handleCancel("contact")}
-                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       Cancel
                     </button>
@@ -343,47 +339,42 @@ const Profile = () => {
                   <ErrorMessage section="contact" />
                 </div>
               ) : (
-                <div className="relative">
-                  <button
-                    onClick={() =>
-                      setEditMode((prev) => ({ ...prev, contact: true }))
-                    }
-                    className="absolute right-2 top-2 p-2 hover:bg-gray-100 rounded-full"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-lg">
-                      <Mail className="w-5 h-5 text-gray-600" />
-                      <span className="text-gray-700">{profileData.email}</span>
-                    </div>
-                    <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-lg">
-                      <Phone className="w-5 h-5 text-gray-600" />
-                      <span className="text-gray-700">{profileData.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-lg">
-                      <MapPin className="w-5 h-5 text-gray-600" />
-                      <span className="text-gray-700">
-                        {profileData.location}
-                      </span>
-                    </div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-lg transition-colors hover:bg-gray-100">
+                    <Mail className="w-5 h-5 text-gray-600 min-w-5" />
+                    <span className="text-gray-700">
+                      {profileData.email || "Add your email"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-lg transition-colors hover:bg-gray-100">
+                    <Phone className="w-5 h-5 text-gray-600 min-w-5" />
+                    <span className="text-gray-700">
+                      {profileData.phone || "Add your phone number"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-lg transition-colors hover:bg-gray-100">
+                    <MapPin className="w-5 h-5 text-gray-600 min-w-5" />
+                    <span className="text-gray-700">
+                      {profileData.location || "Add your location"}
+                    </span>
                   </div>
                 </div>
               )}
             </div>
 
             {/* About */}
-            <div className="mt-8">
-              <div className="flex justify-between items-center mb-3">
+            <div className="mt-10">
+              <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold">About</h2>
                 {!editMode.about && (
                   <button
                     onClick={() =>
                       setEditMode((prev) => ({ ...prev, about: true }))
                     }
-                    className="p-2 hover:bg-gray-100 rounded-full"
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    aria-label="Edit about"
                   >
-                    <Pencil className="w-4 h-4" />
+                    <Pencil className="w-4 h-4 text-gray-600" />
                   </button>
                 )}
               </div>
@@ -397,16 +388,17 @@ const Profile = () => {
                         about: e.target.value,
                       }))
                     }
-                    className="w-full p-3 border rounded-lg h-32 resize-none"
+                    placeholder="Tell us about yourself..."
+                    className="w-full p-4 border rounded-lg h-40 resize-none focus:outline-none focus:ring-2 focus:ring-black"
                   />
-                  <div className="flex gap-2 justify-end mt-4">
+                  <div className="flex gap-3 justify-end mt-4">
                     <SaveButton
                       section="about"
                       onClick={() => handleSave("about")}
                     />
                     <button
                       onClick={() => handleCancel("about")}
-                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       Cancel
                     </button>
@@ -414,8 +406,8 @@ const Profile = () => {
                   <ErrorMessage section="about" />
                 </div>
               ) : (
-                <p className="text-gray-600 leading-relaxed">
-                  {profileData.about}
+                <p className="text-gray-600 leading-relaxed p-4 bg-gray-50 rounded-lg transition-colors hover:bg-gray-100">
+                  {profileData.about || "Add a description about yourself"}
                 </p>
               )}
             </div>

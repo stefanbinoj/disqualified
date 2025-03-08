@@ -20,6 +20,7 @@ const userSchema = new mongoose.Schema(
       enum: ["employee", "employer"],
       default: "employee",
     },
+    // Employee specific fields
     title: {
       type: String,
       trim: true,
@@ -38,6 +39,27 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     about: {
+      type: String,
+      trim: true,
+    },
+    // Employer specific fields
+    companyName: {
+      type: String,
+      trim: true,
+    },
+    businessType: {
+      type: String,
+      trim: true,
+    },
+    website: {
+      type: String,
+      trim: true,
+    },
+    employeeCount: {
+      type: String,
+      trim: true,
+    },
+    workingHours: {
       type: String,
       trim: true,
     },

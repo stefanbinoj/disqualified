@@ -8,10 +8,12 @@ import {
   Star,
   BookmarkIcon,
   EyeOffIcon,
+  X,
 } from "lucide-react";
 import { useLanguage } from "../contexts/LanguageContext";
 import api from "../axiosWithHeaders";
 import company from "../assets/company.png";
+import { toast } from "react-hot-toast";
 
 const Home = () => {
   const { t } = useLanguage();
@@ -22,28 +24,52 @@ const Home = () => {
   const [hiddenJobs, setHiddenJobs] = useState(new Set());
   const [selectedJob, setSelectedJob] = useState(null);
   const [jobs, setJobs] = useState([]);
+  const [filteredJobs, setFilteredJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
-    location: "",
-    position: "",
-    minRate: "",
+    salaryRange: "",
+    wageRange: "",
+    workingHours: [],
   });
+  const [activeFilters, setActiveFilters] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
   const [locations, setLocations] = useState([]);
   const [locationSearch, setLocationSearch] = useState("");
 
-  const toggleSave = (jobId) => {
+  // Toggle save job with animation and notification
+  const toggleSave = (jobId, event) => {
+    if (event) {
+      event.stopPropagation();
+    }
+
     setSavedJobs((prev) => {
       const newSaved = new Set(prev);
       if (newSaved.has(jobId)) {
         newSaved.delete(jobId);
+        toast.success("Job removed from saved items");
       } else {
         newSaved.add(jobId);
+        toast.success("Job saved! You can view it later.");
       }
+
+      // Save to localStorage
+      localStorage.setItem("savedJobs", JSON.stringify([...newSaved]));
       return newSaved;
     });
   };
+
+  // Load saved jobs from localStorage on initial load
+  useEffect(() => {
+    try {
+      const savedJobsData = localStorage.getItem("savedJobs");
+      if (savedJobsData) {
+        setSavedJobs(new Set(JSON.parse(savedJobsData)));
+      }
+    } catch (error) {
+      console.error("Error loading saved jobs:", error);
+    }
+  }, []);
 
   const hideJob = (jobId) => {
     setHiddenJobs((prev) => new Set([...prev, jobId]));
@@ -63,6 +89,145 @@ const Home = () => {
 
   const closeJobDetails = () => {
     setSelectedJob(null);
+  };
+
+  // Handle filter changes
+  const handleFilterChange = (type, value) => {
+    if (type === "workingHours") {
+      setFilters((prev) => {
+        // Toggle working hours selection
+        const updatedHours = prev.workingHours.includes(value)
+          ? prev.workingHours.filter((item) => item !== value)
+          : [...prev.workingHours, value];
+
+        return { ...prev, workingHours: updatedHours };
+      });
+    } else {
+      // For salary and wage ranges - radio buttons
+      setFilters((prev) => ({ ...prev, [type]: value }));
+    }
+  };
+
+  // Apply filters function
+  const applyFilters = () => {
+    const newActiveFilters = { ...filters };
+    setActiveFilters(newActiveFilters);
+    applyActiveFilters();
+    setShowFilterModal(false);
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters({
+      salaryRange: "",
+      wageRange: "",
+      workingHours: [],
+    });
+    setActiveFilters({});
+    setFilteredJobs(jobs.filter((job) => !hiddenJobs.has(job.id)));
+    setShowFilterModal(false);
+  };
+
+  // Remove a specific filter
+  const removeFilter = (filterType) => {
+    const newActiveFilters = { ...activeFilters };
+
+    if (filterType === "workingHours") {
+      delete newActiveFilters.workingHours;
+      setFilters((prev) => ({ ...prev, workingHours: [] }));
+    } else {
+      delete newActiveFilters[filterType];
+      setFilters((prev) => ({ ...prev, [filterType]: "" }));
+    }
+
+    setActiveFilters(newActiveFilters);
+    applyActiveFilters();
+  };
+
+  // Apply active filters to jobs
+  const applyActiveFilters = () => {
+    let filtered = jobs.filter((job) => !hiddenJobs.has(job.id));
+
+    // Filter by selected location
+    if (selectedLocation && selectedLocation !== "All Locations") {
+      filtered = filtered.filter((job) => job.location === selectedLocation);
+    }
+
+    // Apply salary filter
+    if (activeFilters.salaryRange) {
+      const salaryRanges = {
+        salary_15_30: (job) =>
+          extractSalary(job.salary) >= 15000 &&
+          extractSalary(job.salary) <= 30000,
+        salary_30_50: (job) =>
+          extractSalary(job.salary) >= 30000 &&
+          extractSalary(job.salary) <= 50000,
+        salary_50_80: (job) =>
+          extractSalary(job.salary) >= 50000 &&
+          extractSalary(job.salary) <= 80000,
+        salary_80_plus: (job) => extractSalary(job.salary) >= 80000,
+      };
+
+      if (salaryRanges[activeFilters.salaryRange]) {
+        filtered = filtered.filter(salaryRanges[activeFilters.salaryRange]);
+      }
+    }
+
+    // Apply wage filter
+    if (activeFilters.wageRange) {
+      const wageRanges = {
+        wage_500_800: (job) =>
+          extractWage(job.salary) >= 500 && extractWage(job.salary) <= 800,
+        wage_800_1200: (job) =>
+          extractWage(job.salary) >= 800 && extractWage(job.salary) <= 1200,
+        wage_1200_plus: (job) => extractWage(job.salary) >= 1200,
+      };
+
+      if (wageRanges[activeFilters.wageRange]) {
+        filtered = filtered.filter(wageRanges[activeFilters.wageRange]);
+      }
+    }
+
+    // Apply working hours filter
+    if (activeFilters.workingHours && activeFilters.workingHours.length > 0) {
+      filtered = filtered.filter((job) => {
+        // Simple keyword matching for now - this could be improved with better data
+        return activeFilters.workingHours.some((hours) => {
+          if (hours === "fulltime")
+            return job.type.toLowerCase().includes("full");
+          if (hours === "parttime")
+            return job.type.toLowerCase().includes("part");
+          if (hours === "flexible")
+            return job.type.toLowerCase().includes("flex");
+          return false;
+        });
+      });
+    }
+
+    setFilteredJobs(filtered);
+  };
+
+  // Helper to extract numeric salary values
+  const extractSalary = (salaryString) => {
+    if (!salaryString) return 0;
+    const match = salaryString.match(/₹(\d+),?(\d+)?/);
+    if (match) {
+      const value = match[1] + (match[2] || "");
+      return parseInt(value.replace(/,/g, ""), 10);
+    }
+    return 0;
+  };
+
+  // Helper to extract wage values
+  const extractWage = (wageString) => {
+    if (!wageString) return 0;
+    // Similar to extractSalary but for daily wages
+    const match = wageString.match(/₹(\d+),?(\d+)?/);
+    if (match) {
+      const value = match[1] + (match[2] || "");
+      return parseInt(value.replace(/,/g, ""), 10);
+    }
+    return 0;
   };
 
   useEffect(() => {
@@ -95,22 +260,40 @@ const Home = () => {
           },
         });
 
-        const transformedJobs = response.data.map((job) => ({
-          id: job._id,
-          title: job.title,
-          company:
-            job.userId?.firstName + " " + job.userId?.lastName ||
-            "Company Name",
-          location: job.location,
-          salary: `₹${job.salary}`,
-          experience: job.duration,
-          postedDate: formatDate(job.postedDate),
-          type: job.position,
-          skills: [],
-          logo: company,
-        }));
+        const transformedJobs = response.data.map((job) => {
+          const companyName =
+            job.company ||
+            (job.userId?.firstName || job.userId?.lastName
+              ? `${job.userId?.firstName || ""} ${
+                  job.userId?.lastName || ""
+                }'s Company`.trim()
+              : "Company Name");
+
+          const formattedSalary = job.salary
+            ? job.salary.startsWith("₹")
+              ? job.salary
+              : `₹${job.salary}`
+            : job.rate
+            ? `₹${job.rate}`
+            : "₹Not specified";
+
+          return {
+            id: job._id,
+            title: job.title || "Job Title",
+            company: companyName,
+            description: job.description || "No description provided",
+            location: job.location || "Remote",
+            salary: formattedSalary,
+            experience: job.experience || job.duration || "Not specified",
+            postedDate: formatDate(job.postedDate),
+            type: job.type || job.position || "Full Time",
+            skills: job.skills || [],
+            logo: "https://via.placeholder.com/50", // Default logo
+          };
+        });
 
         setJobs(transformedJobs);
+        setFilteredJobs(transformedJobs);
       } catch (error) {
         console.error("Error fetching jobs:", error);
         setError(error.response?.data?.message || "Failed to fetch jobs");
@@ -126,6 +309,13 @@ const Home = () => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, selectedLocation]);
 
+  // Apply active filters whenever jobs or active filters change
+  useEffect(() => {
+    if (jobs.length > 0) {
+      applyActiveFilters();
+    }
+  }, [jobs, activeFilters, hiddenJobs, selectedLocation]);
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -138,17 +328,30 @@ const Home = () => {
     return date.toLocaleDateString();
   };
 
-  const filteredJobs = jobs.filter((job) => {
-    return (
-      (!filters.location || job.location.includes(filters.location)) &&
-      (!filters.position || job.type.includes(filters.position)) &&
-      (!filters.minRate || job.rate >= filters.minRate)
-    );
-  });
-
   const filteredLocations = locations.filter((location) =>
     location.toLowerCase().includes(locationSearch.toLowerCase())
   );
+
+  const applyForJob = async (jobId) => {
+    try {
+      const response = await api.post(`/jobs/${jobId}/apply`);
+
+      if (response.data.success) {
+        // Show success message
+        toast.success(
+          "Application submitted successfully! Check your inbox for confirmation."
+        );
+
+        // Optionally close the job details modal
+        closeJobDetails();
+      }
+    } catch (error) {
+      console.error("Error applying for job:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to apply for this job"
+      );
+    }
+  };
 
   if (isLoading) {
     return (
@@ -166,6 +369,14 @@ const Home = () => {
     );
   }
 
+  // Get active filter count
+  const activeFilterCount = Object.keys(activeFilters).filter((key) => {
+    if (key === "workingHours") {
+      return activeFilters[key]?.length > 0;
+    }
+    return activeFilters[key];
+  }).length;
+
   return (
     <div className="bg-gray-50 min-h-screen">
       <Header />
@@ -176,9 +387,14 @@ const Home = () => {
           {/* Filter Button */}
           <button
             onClick={() => setShowFilterModal(true)}
-            className="p-2 hover:bg-gray-100 rounded-full"
+            className="p-2 hover:bg-gray-100 rounded-full relative"
           >
             <SlidersHorizontal className="w-6 h-6 text-gray-600" />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
           </button>
 
           {/* Location Dropdown */}
@@ -204,6 +420,64 @@ const Home = () => {
             <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           </div>
         </div>
+
+        {/* Active Filters display */}
+        {activeFilterCount > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {activeFilters.salaryRange && (
+              <div className="bg-gray-100 rounded-full px-3 py-1 text-sm flex items-center gap-1">
+                <span>
+                  {activeFilters.salaryRange === "salary_15_30" && "₹15K-₹30K"}
+                  {activeFilters.salaryRange === "salary_30_50" && "₹30K-₹50K"}
+                  {activeFilters.salaryRange === "salary_50_80" && "₹50K-₹80K"}
+                  {activeFilters.salaryRange === "salary_80_plus" && "₹80K+"}
+                </span>
+                <button onClick={() => removeFilter("salaryRange")}>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {activeFilters.wageRange && (
+              <div className="bg-gray-100 rounded-full px-3 py-1 text-sm flex items-center gap-1">
+                <span>
+                  {activeFilters.wageRange === "wage_500_800" &&
+                    "₹500-₹800/day"}
+                  {activeFilters.wageRange === "wage_800_1200" &&
+                    "₹800-₹1200/day"}
+                  {activeFilters.wageRange === "wage_1200_plus" && "₹1200+/day"}
+                </span>
+                <button onClick={() => removeFilter("wageRange")}>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {activeFilters.workingHours?.length > 0 && (
+              <div className="bg-gray-100 rounded-full px-3 py-1 text-sm flex items-center gap-1">
+                <span>
+                  {activeFilters.workingHours.length === 1
+                    ? activeFilters.workingHours[0] === "fulltime"
+                      ? "Full Time"
+                      : activeFilters.workingHours[0] === "parttime"
+                      ? "Part Time"
+                      : "Flexible"
+                    : `${activeFilters.workingHours.length} schedules`}
+                </span>
+                <button onClick={() => removeFilter("workingHours")}>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            <button
+              onClick={clearFilters}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Job Listings with reduced spacing */}
@@ -225,12 +499,29 @@ const Home = () => {
           ) : (
             <div
               key={job.id}
-              className="bg-white rounded-lg p-4 mb-0.5 shadow-sm border border-gray-100 mx-1 cursor-pointer"
+              className="bg-white rounded-lg p-4 mb-0.5 shadow-sm border border-gray-100 mx-1 cursor-pointer relative group"
               onClick={() => openJobDetails(job)}
             >
+              {/* Floating save button - visible on hover or when saved */}
+              <button
+                onClick={(e) => toggleSave(job.id, e)}
+                className={`absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-all ${
+                  savedJobs.has(job.id)
+                    ? "bg-black text-white opacity-100"
+                    : "bg-gray-100 text-gray-400 opacity-0 group-hover:opacity-100"
+                }`}
+                aria-label={savedJobs.has(job.id) ? "Unsave job" : "Save job"}
+              >
+                <BookmarkIcon
+                  className={`w-4 h-4 ${
+                    savedJobs.has(job.id) ? "fill-white" : ""
+                  }`}
+                />
+              </button>
+
               <div className="flex gap-3 items-start">
                 <div className="flex-1">
-                  <div className="flex justify-between items-start">
+                  <div className="flex items-start pr-8">
                     <div>
                       <h3 className="font-semibold text-lg">{job.title}</h3>
                       <p className="text-gray-600">{job.company}</p>
@@ -277,36 +568,36 @@ const Home = () => {
                         <EyeOffIcon className="w-5 h-5 text-gray-400" />
                         <span className="text-xs text-gray-400">Hide</span>
                       </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleSave(job.id);
-                        }}
-                        className="p-1.5 hover:bg-gray-100 rounded-full flex items-center gap-1"
-                      >
-                        <BookmarkIcon
-                          className={`w-5 h-5 ${
-                            savedJobs.has(job.id)
-                              ? "fill-black text-black"
-                              : "text-gray-400"
-                          }`}
-                        />
-                        <span
-                          className={`text-xs ${
-                            savedJobs.has(job.id)
-                              ? "text-black"
-                              : "text-gray-400"
-                          }`}
-                        >
-                          {savedJobs.has(job.id) ? "Saved" : "Save"}
-                        </span>
-                      </button>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           )
+        )}
+
+        {filteredJobs.length === 0 && !isLoading && (
+          <div className="flex flex-col items-center justify-center p-8 text-center bg-white rounded-lg shadow-sm mt-4 mx-2">
+            <div className="bg-gray-100 rounded-full p-4 mb-4">
+              <Search className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-800 mb-2">
+              No matching jobs found
+            </h3>
+            <p className="text-gray-500 max-w-md">
+              We couldn't find any jobs that match your current filters. Try
+              adjusting your search criteria or check back later for new
+              opportunities.
+            </p>
+            {Object.keys(activeFilters).length > 0 && (
+              <button
+                onClick={clearFilters}
+                className="mt-4 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                Clear All Filters
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -379,6 +670,10 @@ const Home = () => {
                       name="compensation"
                       className="mr-2"
                       value="salary_15_30"
+                      checked={filters.salaryRange === "salary_15_30"}
+                      onChange={() =>
+                        handleFilterChange("salaryRange", "salary_15_30")
+                      }
                     />
                     ₹15,000 - ₹30,000
                   </label>
@@ -388,6 +683,10 @@ const Home = () => {
                       name="compensation"
                       className="mr-2"
                       value="salary_30_50"
+                      checked={filters.salaryRange === "salary_30_50"}
+                      onChange={() =>
+                        handleFilterChange("salaryRange", "salary_30_50")
+                      }
                     />
                     ₹30,000 - ₹50,000
                   </label>
@@ -397,6 +696,10 @@ const Home = () => {
                       name="compensation"
                       className="mr-2"
                       value="salary_50_80"
+                      checked={filters.salaryRange === "salary_50_80"}
+                      onChange={() =>
+                        handleFilterChange("salaryRange", "salary_50_80")
+                      }
                     />
                     ₹50,000 - ₹80,000
                   </label>
@@ -406,6 +709,10 @@ const Home = () => {
                       name="compensation"
                       className="mr-2"
                       value="salary_80_plus"
+                      checked={filters.salaryRange === "salary_80_plus"}
+                      onChange={() =>
+                        handleFilterChange("salaryRange", "salary_80_plus")
+                      }
                     />
                     ₹80,000+
                   </label>
@@ -422,6 +729,10 @@ const Home = () => {
                       name="compensation"
                       className="mr-2"
                       value="wage_500_800"
+                      checked={filters.wageRange === "wage_500_800"}
+                      onChange={() =>
+                        handleFilterChange("wageRange", "wage_500_800")
+                      }
                     />
                     ₹500 - ₹800 per day
                   </label>
@@ -431,6 +742,10 @@ const Home = () => {
                       name="compensation"
                       className="mr-2"
                       value="wage_800_1200"
+                      checked={filters.wageRange === "wage_800_1200"}
+                      onChange={() =>
+                        handleFilterChange("wageRange", "wage_800_1200")
+                      }
                     />
                     ₹800 - ₹1,200 per day
                   </label>
@@ -440,6 +755,10 @@ const Home = () => {
                       name="compensation"
                       className="mr-2"
                       value="wage_1200_plus"
+                      checked={filters.wageRange === "wage_1200_plus"}
+                      onChange={() =>
+                        handleFilterChange("wageRange", "wage_1200_plus")
+                      }
                     />
                     ₹1,200+ per day
                   </label>
@@ -451,15 +770,36 @@ const Home = () => {
                 <h3 className="font-medium mb-2">Working Hours</h3>
                 <div className="space-y-2">
                   <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
+                    <input
+                      type="checkbox"
+                      className="mr-2"
+                      checked={filters.workingHours.includes("fulltime")}
+                      onChange={() =>
+                        handleFilterChange("workingHours", "fulltime")
+                      }
+                    />
                     Full Time (40 hrs/week)
                   </label>
                   <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
+                    <input
+                      type="checkbox"
+                      className="mr-2"
+                      checked={filters.workingHours.includes("parttime")}
+                      onChange={() =>
+                        handleFilterChange("workingHours", "parttime")
+                      }
+                    />
                     Part Time (20-30 hrs/week)
                   </label>
                   <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
+                    <input
+                      type="checkbox"
+                      className="mr-2"
+                      checked={filters.workingHours.includes("flexible")}
+                      onChange={() =>
+                        handleFilterChange("workingHours", "flexible")
+                      }
+                    />
                     Flexible Hours
                   </label>
                 </div>
@@ -468,13 +808,13 @@ const Home = () => {
               <div className="pt-4 flex gap-3">
                 <button
                   className="flex-1 py-3 border border-gray-300 rounded-lg"
-                  onClick={() => setShowFilterModal(false)}
+                  onClick={clearFilters}
                 >
                   {t("clear")}
                 </button>
                 <button
                   className="flex-1 py-3 bg-black text-white rounded-lg"
-                  onClick={() => setShowFilterModal(false)}
+                  onClick={applyFilters}
                 >
                   {t("apply")}
                 </button>
@@ -504,15 +844,32 @@ const Home = () => {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  closeJobDetails();
-                }}
-                className="p-2 hover:bg-gray-100 rounded-full"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSave(selectedJob.id);
+                  }}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full 
+                    ${
+                      savedJobs.has(selectedJob.id)
+                        ? "bg-black text-white"
+                        : "border border-gray-300 text-gray-400 hover:border-gray-400"
+                    }`}
+                >
+                  <BookmarkIcon
+                    className={`w-5 h-5 ${
+                      savedJobs.has(selectedJob.id) ? "fill-white" : ""
+                    }`}
+                  />
+                </button>
+                <button
+                  onClick={closeJobDetails}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             <div className="space-y-6">
@@ -530,11 +887,7 @@ const Home = () => {
               {/* Job Description */}
               <div>
                 <h3 className="font-semibold text-lg mb-2">Job Description</h3>
-                <p className="text-gray-600">
-                  We are looking for a {selectedJob.title} to join our team.
-                  This is a full-time position with competitive compensation and
-                  benefits.
-                </p>
+                <p className="text-gray-600">{selectedJob.description}</p>
               </div>
 
               {/* Company Overview */}
@@ -543,37 +896,18 @@ const Home = () => {
                   About {selectedJob.company}
                 </h3>
                 <p className="text-gray-600">
-                  {selectedJob.company} is a leading technology company focused
-                  on innovation and excellence.
+                  {selectedJob.description ||
+                    `${selectedJob.company} is a leading technology company focused on innovation and excellence.`}
                 </p>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
+              {/* Apply Button */}
+              <div className="pt-4">
                 <button
+                  className="w-full bg-black text-white py-3 rounded-lg hover:bg-gray-800 font-medium"
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleSave(selectedJob.id);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:border-gray-400"
-                >
-                  <BookmarkIcon
-                    className={`w-5 h-5 ${
-                      savedJobs.has(selectedJob.id)
-                        ? "fill-black text-black"
-                        : "text-gray-400"
-                    }`}
-                  />
-                  <span>
-                    {savedJobs.has(selectedJob.id) ? "Saved" : "Save"}
-                  </span>
-                </button>
-                <button
-                  className="flex-1 bg-black text-white py-2 rounded-lg hover:bg-gray-800"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Handle apply action
-                    console.log("Apply clicked for job:", selectedJob.id);
+                    applyForJob(selectedJob.id);
                   }}
                 >
                   Apply Now

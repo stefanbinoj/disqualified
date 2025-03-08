@@ -75,16 +75,29 @@ const updateUserProfile = async (req, res) => {
     // Get userId from authenticated user
     const userId = req.user.userId;
 
-    // Fields that are allowed to be updated
+    console.log("Updating user profile for userId:", userId);
+    console.log("Update data:", req.body);
+
+    // Fields that are allowed to be updated - include all fields from both employee and employer profiles
     const allowedUpdates = [
+      // Common fields
       "firstName",
       "lastName",
       "phone",
-      "title",
-      "status",
       "email",
       "location",
       "about",
+
+      // Employee specific fields
+      "title",
+      "status",
+
+      // Employer specific fields
+      "companyName",
+      "businessType",
+      "website",
+      "employeeCount",
+      "workingHours",
     ];
 
     // Create update object only with allowed fields that are present in req.body
@@ -103,6 +116,8 @@ const updateUserProfile = async (req, res) => {
       });
     }
 
+    console.log("Validated updates:", updates);
+
     // Find and update user
     const updatedUser = await User.findByIdAndUpdate(
       userId,
@@ -116,6 +131,8 @@ const updateUserProfile = async (req, res) => {
         message: "User not found",
       });
     }
+
+    console.log("User updated successfully:", updatedUser._id);
 
     res.status(200).json({
       success: true,

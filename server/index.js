@@ -25,6 +25,7 @@ const PORT = process.env.PORT || 4000;
 // Routes
 app.use("/api/users", require("./routers/userRoutes"));
 app.use("/api/jobs", require("./routers/jobListingRoutes"));
+app.use("/api/messages", require("./routers/messageRoutes"));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

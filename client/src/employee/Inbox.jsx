@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from "react";
 import Header from "./components/Header";
-import { Circle, CheckCircle2, ArrowLeft, Calendar, Clock } from "lucide-react";
-import axiosWithHeader from "../axiosWithHeaders"; // Adjust this path as needed
-import Loader from "../components/Loader"; // Create or import this component
+import api from "../axiosWithHeaders";
+import { formatDistanceToNow } from "date-fns";
+import {
+  Mail,
+  Circle,
+  CheckCircle2,
+  ArrowLeft,
+  Calendar,
+  Clock,
+} from "lucide-react";
 
 const Inbox = () => {
   const [messages, setMessages] = useState([]);
@@ -12,49 +19,45 @@ const Inbox = () => {
   const [readMessages, setReadMessages] = useState(new Set());
 
   useEffect(() => {
-    fetchInbox();
-  }, []);
-
-  const fetchInbox = async () => {
-    try {
-      setLoading(true);
-      const response = await axiosWithHeader.get("/users/inbox");
-      if (response.data.success) {
-        setMessages(response.data.inbox);
+    const fetchMessages = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get("/messages/inbox");
+        setMessages(response.data.data);
 
         // Initialize read messages set
-        const readMsgs = new Set();
-        response.data.inbox.forEach((msg) => {
-          if (msg.read) readMsgs.add(msg._id);
-        });
+        const readMsgs = new Set(
+          response.data.data.filter((msg) => msg.isRead).map((msg) => msg._id)
+        );
         setReadMessages(readMsgs);
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+        setError(error.response?.data?.message || "Failed to load messages");
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(
-        "Failed to fetch inbox messages: " +
-          (err.response?.data?.message || err.message)
-      );
-      console.error("Inbox fetch error:", err);
-    } finally {
-      setLoading(false);
+    };
+
+    fetchMessages();
+  }, []);
+
+  const markAsRead = async (messageId) => {
+    try {
+      await api.patch(`/messages/${messageId}/read`);
+
+      // Update local state
+      setReadMessages((prev) => new Set([...prev, messageId]));
+    } catch (error) {
+      console.error("Error marking message as read:", error);
     }
   };
 
-  const handleMessageClick = async (message) => {
+  const handleMessageClick = (message) => {
     setSelectedMessage(message);
 
-    // If message is not already marked as read
+    // Mark as read if it isn't already
     if (!readMessages.has(message._id)) {
-      try {
-        // Optimistically update UI
-        setReadMessages((prev) => new Set([...prev, message._id]));
-
-        // Update in backend (assuming an endpoint exists to mark messages as read)
-        // This endpoint would need to be implemented on the backend
-        // await axiosWithHeader.patch(`/api/users/inbox/${message._id}/read`, { read: true });
-      } catch (err) {
-        console.error("Error marking message as read:", err);
-      }
+      markAsRead(message._id);
     }
   };
 
@@ -69,25 +72,21 @@ const Inbox = () => {
     });
   };
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <div className="flex-1 flex items-center justify-center">
-          <Loader />
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
     );
+  }
 
-  if (error)
+  if (error) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <div className="flex-1 flex items-center justify-center text-red-500">
-          {error}
-        </div>
+      <div className="flex items-center justify-center min-h-screen text-red-500">
+        <p>{error}</p>
       </div>
     );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -96,13 +95,13 @@ const Inbox = () => {
         {!selectedMessage ? (
           // Messages List
           <div className="w-full overflow-y-auto">
-            {messages.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                Your inbox is empty
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-100">
-                {messages.map((message) => (
+            <div className="divide-y divide-gray-100">
+              {messages.length === 0 ? (
+                <div className="p-6 text-center text-gray-500">
+                  Your inbox is empty.
+                </div>
+              ) : (
+                messages.map((message) => (
                   <div
                     key={message._id}
                     className={`px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors ${
@@ -113,11 +112,13 @@ const Inbox = () => {
                     <div className="flex items-start gap-3">
                       <div
                         className={`mt-1 ${
-                          message.type === "offer"
+                          message.type === "application"
+                            ? "text-blue-500"
+                            : message.type === "confirmation"
                             ? "text-green-500"
-                            : message.type === "rejection"
+                            : message.type === "reschedule"
                             ? "text-red-500"
-                            : "text-blue-500"
+                            : "text-gray-500"
                         }`}
                       >
                         {!readMessages.has(message._id) ? (
@@ -135,24 +136,25 @@ const Inbox = () => {
                                 : "text-gray-600"
                             }`}
                           >
-                            {message.subject}
+                            {message.title}
                           </h3>
                           <span className="text-xs text-gray-500 whitespace-nowrap ml-4">
-                            {formatDate(message.timestamp)}
+                            {formatDate(message.createdAt)}
                           </span>
                         </div>
                         <p className="text-sm text-gray-500 mt-1">
-                          {message.sender}
+                          {message.senderId.firstName}{" "}
+                          {message.senderId.lastName}
                         </p>
                         <p className="text-sm text-gray-500 mt-1 line-clamp-1">
-                          {message.preview}
+                          {message.content}
                         </p>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                ))
+              )}
+            </div>
           </div>
         ) : (
           // Message Detail View
@@ -167,21 +169,22 @@ const Inbox = () => {
               </button>
             </div>
             <div className="p-6">
-              <h2 className="text-xl font-semibold">
-                {selectedMessage.subject}
-              </h2>
+              <h2 className="text-xl font-semibold">{selectedMessage.title}</h2>
               <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                <span>{selectedMessage.sender}</span>
+                <span>
+                  {selectedMessage.senderId.firstName}{" "}
+                  {selectedMessage.senderId.lastName}
+                </span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  {new Date(selectedMessage.timestamp).toLocaleDateString(
+                  {new Date(selectedMessage.createdAt).toLocaleDateString(
                     "en-IN"
                   )}
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
-                  {new Date(selectedMessage.timestamp).toLocaleTimeString(
+                  {new Date(selectedMessage.createdAt).toLocaleTimeString(
                     "en-IN",
                     {
                       hour: "2-digit",
@@ -191,8 +194,14 @@ const Inbox = () => {
                   )}
                 </span>
               </div>
+              {selectedMessage.jobId && (
+                <div className="mt-2 text-sm text-gray-500">
+                  Job: {selectedMessage.jobId.title} -{" "}
+                  {selectedMessage.jobId.position}
+                </div>
+              )}
               <div className="mt-6 text-gray-600 whitespace-pre-line">
-                {selectedMessage.fullMessage}
+                {selectedMessage.content}
               </div>
             </div>
           </div>

@@ -5,8 +5,14 @@ const jobListingSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
     },
     title: {
+      type: String,
+      trim: true,
+      required: true,
+    },
+    company: {
       type: String,
       trim: true,
     },
@@ -14,20 +20,19 @@ const jobListingSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    company: {
-      type: String,
-      trim: true,
-    },
     starRating: {
       type: Number,
+      default: 0,
     },
     position: {
       type: String,
       trim: true,
+      required: true,
     },
     location: {
       type: String,
       trim: true,
+      required: true,
     },
     duration: {
       type: String,
@@ -37,19 +42,29 @@ const jobListingSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-    salary: {
+    rate: {
       type: Number,
       min: 0,
+      required: true,
+    },
+    salary: {
+      type: String,
+      trim: true,
     },
     experience: {
-      type: Number,
-      min: 0,
+      type: String,
+      trim: true,
     },
-    skills: {
-      type: [String],
-    },
+    skills: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
     type: {
       type: String,
+      trim: true,
+      default: "Full Time",
     },
     applicants: [
       {
