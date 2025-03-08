@@ -581,34 +581,34 @@ const Applies = () => {
             <h3 className="font-semibold text-lg mb-3">Applicant Details</h3>
             <div className="space-y-3">
               <p className="text-gray-700 font-medium text-lg">
-                {application.userId?.firstName} {application.userId?.lastName}
+                {application.user?.firstName} {application.user?.lastName}
               </p>
 
               <div className="flex flex-col gap-2 mt-3">
                 <div className="flex items-center gap-2 text-gray-600">
                   <MapPin className="w-4 h-4" />
                   <span>
-                    {application.userId?.location || "Location not specified"}
+                    {application.user?.location || "Location not specified"}
                   </span>
                 </div>
 
-                {application.userId?.phone && (
+                {application.user?.phone && (
                   <button
-                    onClick={() => handleCall(application.userId.phone)}
+                    onClick={() => handleCall(application.user.phone)}
                     className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
                   >
                     <Phone className="w-4 h-4" />
-                    <span>{application.userId.phone}</span>
+                    <span>{application.user.phone}</span>
                   </button>
                 )}
 
-                {application.userId?.email && (
+                {application.user?.email && (
                   <button
-                    onClick={() => handleEmail(application.userId.email)}
+                    onClick={() => handleEmail(application.user.email)}
                     className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
                   >
                     <Mail className="w-4 h-4" />
-                    <span>{application.userId.email}</span>
+                    <span>{application.user.email}</span>
                   </button>
                 )}
               </div>
@@ -625,34 +625,42 @@ const Applies = () => {
           </div>
 
           {/* Job Details */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="border-t pt-4">
             <h3 className="font-semibold text-lg mb-3">Job Details</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="text-gray-600">
-                <span className="text-sm text-gray-500">Salary:</span>
-                <div>{application.job.salary || "Not specified"}</div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">Location</p>
+                <p className="font-medium">{application.job.location}</p>
               </div>
-              <div className="text-gray-600">
-                <span className="text-sm text-gray-500">Job Type:</span>
-                <div>{application.job.type || "Not specified"}</div>
+              <div>
+                <p className="text-sm text-gray-500">Salary</p>
+                <p className="font-medium">{application.job.salary}</p>
               </div>
-              <div className="text-gray-600">
-                <span className="text-sm text-gray-500">Applied On:</span>
-                <div>{formatDate(application.appliedDate)}</div>
+              <div>
+                <p className="text-sm text-gray-500">Job Type</p>
+                <p className="font-medium">{application.job.type}</p>
               </div>
-              <div className="text-gray-600">
-                <span className="text-sm text-gray-500">Status:</span>
-                <div
-                  className={`inline-block px-2 py-0.5 rounded-full text-xs mt-1 font-medium ${getStatusColor(
-                    application.status
-                  )}`}
-                >
-                  {application.status?.charAt(0).toUpperCase() +
-                    application.status?.slice(1) || "Pending"}
-                </div>
+              <div>
+                <p className="text-sm text-gray-500">Application Status</p>
+                <p className="font-medium">{application.status}</p>
               </div>
             </div>
           </div>
+
+          {/* Resume Preview (if available) */}
+          {application.user?.resume && (
+            <div className="border-t pt-4">
+              <h3 className="font-semibold text-lg mb-3">Resume</h3>
+              <a
+                href={application.user.resume}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+              >
+                View Resume
+              </a>
+            </div>
+          )}
 
           {/* Status Update */}
           <div className="border-t pt-4">
@@ -809,14 +817,14 @@ const Applies = () => {
                     >
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 font-bold">
-                          {application.userId?.firstName?.charAt(0) || "A"}
+                          {application.user?.firstName?.charAt(0) || "A"}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-center">
                             <div className="min-w-0">
                               <h3 className="font-semibold text-gray-900 truncate">
-                                {application.userId?.firstName}{" "}
-                                {application.userId?.lastName}
+                                {application.user?.firstName}{" "}
+                                {application.user?.lastName}
                               </h3>
                               <p className="text-sm text-gray-600 truncate">
                                 Applied for: {application.job.title}
@@ -835,7 +843,7 @@ const Applies = () => {
                             <span className="flex items-center gap-1 text-sm text-gray-500">
                               <MapPin className="w-4 h-4" />
                               <span className="truncate">
-                                {application.userId?.location ||
+                                {application.user?.location ||
                                   "Location not specified"}
                               </span>
                             </span>
